@@ -10,10 +10,10 @@
 class Kohana_DB {
 	
 	/**
-	 * Create a new database query of the given type.
+	 * Create a new alter table query.
 	 *
-	 * @param   string   SQL statement
-	 * @return  Database_Query
+	 * @param   object   The table object to alter.
+	 * @return  Database_Query_Alter
 	 */
 	public static function alter( Database_Table $table)
 	{
@@ -21,10 +21,10 @@ class Kohana_DB {
 	}
 	
 	/**
-	 * Create a new database query of the given type.
+	 * Create a new create table query.
 	 *
-	 * @param   string   SQL statement
-	 * @return  Database_Query
+	 * @param   object   The unloaded table object to create.
+	 * @return  Database_Query_Create
 	 */
 	public static function create( Database_Table $table)
 	{
@@ -32,17 +32,23 @@ class Kohana_DB {
 	}
 	
 	/**
-	 * Create a new database query of the given type.
+	 * Create a new drop query.
 	 *
-	 * @param   integer  type: Database::SELECT, Database::UPDATE, etc
-	 * @param   string   SQL statement
-	 * @return  Database_Query
+	 * @param   string	 The object type to drop; 'database', 'table' or 'column'.
+	 * @param   object   The object to drop.
+	 * @return  Database_Query_Drop
 	 */
-	public static function drop($object)
+	public static function drop($type, $object)
 	{
-		return new Database_Query_Builder_Drop($object);
+		return new Database_Query_Builder_Drop($type, $object);
 	}
 	
+	/**
+	 * Create a new database query of the given type.
+	 *
+	 * @param   string   Table to truncate.
+	 * @return  Database_Query_Truncate
+	 */
 	public static function truncate($object)
 	{
 		return new Database_Query_Builder_Truncate($object);
