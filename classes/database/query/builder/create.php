@@ -1,6 +1,6 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
-class Kohana_Database_Query_Builder_Create extends Database_Query_Builder {
+class Database_Query_Builder_Create extends Database_Query_Builder {
 	
 	protected $_table;
 	

@@ -7,7 +7,7 @@
  * @copyright  (c) 2008-2009 Kohana Team
  * @license    http://kohanaphp.com/license.html
  */
-class Kohana_Database_Query_Builder_Truncate extends Database_Query_Builder {
+class Database_Query_Builder_Truncate extends Database_Query_Builder {
 	
 	
 }
