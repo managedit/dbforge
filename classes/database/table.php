@@ -62,18 +62,25 @@ class Kohana_Database_Table {
 		// If the table hasn't been loaded then return any user defined columns.
 		if( ! $this->_loaded)
 		{
-			return $this->_columns;
+			// Return the column array, or the column that matches the like param
+			return $like === NULL ? $this->_columns : $this->_columns[$like];
 		}
 		
-		$columns = $this->_database->list_columns($this->name);
+		// Get all the columns
+		$columns = $this->_database->list_columns($this->name, $like);
 		
+		// Foreach column in the data array
 		foreach($columns as & $column)
 		{
-			$column = new Database_Table_Column::factory();
+			// Create a new column object
+			$col = new Database_Table_Column();
+			
+			// Load the schema and replace it with the column object
+			$column = $col->load_schema($this, clone $column);
 		}
 		
 		// Get the columns from the information schema.
-		return $this->database->get_columns($this, $details, $like);
+		return $columns;
 	}
 	
 	public function compile_constraints()
