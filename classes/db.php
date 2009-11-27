@@ -44,12 +44,12 @@ class Kohana_DB {
 	}
 	
 	/**
-	 * Create a new database query of the given type.
+	 * Creates a new table truncate query.
 	 *
-	 * @param   string   Table to truncate.
+	 * @param   object   Table object to truncate.
 	 * @return  Database_Query_Truncate
 	 */
-	public static function truncate($object)
+	public static function truncate( Database_Table $object)
 	{
 		return new Database_Query_Builder_Truncate($object);
 	}

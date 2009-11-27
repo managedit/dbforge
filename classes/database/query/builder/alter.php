@@ -40,7 +40,11 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 			));
 		}
 		
+		// Set the table object.
 		$this->_table = $table;
+		
+		// Because mummy says so.
+		parent::__construct(Database::ALTER, '');
 	}
 	
 	/**

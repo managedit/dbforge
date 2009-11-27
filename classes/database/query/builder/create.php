@@ -12,7 +12,7 @@ class Database_Query_Builder_Create extends Database_Query_Builder {
 	// The table object we're working with.
 	protected $_table;
 	
-	public function __construct(Database_Table $table)
+	public function __construct( Database_Table $table)
 	{
 		// Check if the table is already loaded
 		if($table->loaded())
@@ -27,7 +27,7 @@ class Database_Query_Builder_Create extends Database_Query_Builder {
 		$this->_table = $table;
 		
 		// Because mummy says so
-		parent::__construct(Database_Query_Type::CREATE, '');
+		parent::__construct(Database::CREATE, '');
 	}
 	
 	public function compile(Database $db)

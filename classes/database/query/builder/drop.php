@@ -24,7 +24,7 @@ class Database_Query_Builder_Drop extends Database_Query_Builder {
 		$this->_object = $object;
 		
 		// Because mummy says so.
-		parent::__construct(Database_Query_Type::DROP, '');
+		parent::__construct(Database::DROP, '');
 	}
 	
 	public function compile(Database $db)
