@@ -3,11 +3,28 @@
  * Database query builder for TRUNCATE statements.
  *
  * @package    Database
- * @author     Kohana Team
+ * @author     Oliver Morgan
  * @copyright  (c) 2008-2009 Kohana Team
  * @license    http://kohanaphp.com/license.html
  */
 class Database_Query_Builder_Truncate extends Database_Query_Builder {
 	
+	// The name of the table we're about to truncate
+	protected $_table;
 	
-}
+	public function __construct( Database_Table $table)
+	{
+		// Set the table object.
+		$this->_table = $table;
+		
+		// Because mummy says so.
+		parent::__construct(Database::DROP, '');
+	}
+	
+	public function compile( Database $db)
+	{
+		// Return the SQL, its straightforward.
+		return 'TRUNCATE TABLE '.$db->quote_table($this->_table->name);
+	}
+	
+} //END Database_Query_Builder_Truncate
