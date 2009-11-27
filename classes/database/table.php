@@ -3,16 +3,13 @@
 class Kohana_Database_Table {
 	
 	// Public properties
-	public $database;
-	public $name;
-	public $type;
-	public $catalog;
-	
-	// Protected properties
+	protected $_database;
+	protected $_name;
+	protected $_catalog;
 	protected $_loaded = false;
 	protected $_columns = array();
 	
-	public function __construct($information_schema = NULL, Database $database = NULL)
+	public function __construct(Database $database = NULL, $information_schema = NULL)
 	{
 		// Load the current database instance by detault
 		if($database === NULL)
@@ -27,12 +24,25 @@ class Kohana_Database_Table {
 		if($information_schema !== NULL)
 		{
 			// These properties are supported by ISO standards
-			$this->name = $information_schema['TABLE_NAME'];
-			$this->type = $information_schema['TABLE_TYPE'];
-			$this->catalog = $information_schema['TABLE_CATALOG'];
+			$this->_name = $information_schema['TABLE_NAME'];
+			$this->_catalog = $information_schema['TABLE_CATALOG'];
 			
 			// Identify the object as loaded from live table data.
 			$this->_loaded = true;
+		}
+	}
+	
+	public function __get($name)
+	{
+		// Get table properties
+		switch($name)
+		{
+			case 'database':
+				return $this->_database;
+			case 'name':
+				return $this->_name;
+			case 'catalog':
+				return $this->_catalog;
 		}
 	}
 	
@@ -41,12 +51,25 @@ class Kohana_Database_Table {
 		return $this->_loaded;
 	}
 	
-	public function columns($details = FALSE, $like = NULL)
+	public function truncate()
+	{
+		DB::truncate($this)
+			->execute($this->_database);
+	}
+	
+	public function columns($like = NULL)
 	{
 		// If the table hasn't been loaded then return any user defined columns.
 		if( ! $this->_loaded)
 		{
 			return $this->_columns;
+		}
+		
+		$columns = $this->_database->list_columns($this->name);
+		
+		foreach($columns as & $column)
+		{
+			$column = new Database_Table_Column::factory();
 		}
 		
 		// Get the columns from the information schema.
