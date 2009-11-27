@@ -1,6 +1,6 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 /**
- * Database table object.
+ * Database table float column.
  *
  * @package		DBForge
  * @author		Oliver Morgan
@@ -8,14 +8,4 @@
  * @copyright	(c) 2009 Oliver Morgan
  * @license		MIT
  */
-class Kohana_Database_Table_Column_Float extends Database_Table_Column_Int {
-	
-	public $exact;
-	
-	public function __construct($datatype, $exact = false)
-	{
-		$this->exact = $exact;
-		
-		parent::__construct($datatype);
-	}
-}
+class Database_Column_Float extends Database_Column_Int { }

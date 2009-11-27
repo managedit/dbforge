@@ -1,6 +1,6 @@
-<?php
+<?php defined('SYSPATH') or die('No direct script access.');
 /**
- * Database table object.
+ * Database table datetime column.
  *
  * @package		DBForge
  * @author		Oliver Morgan
@@ -8,3 +8,18 @@
  * @copyright	(c) 2009 Oliver Morgan
  * @license		MIT
  */
+class Database_Column_Datetime extends Database_Column {
+	
+	/*
+	 * Not editable
+	 */
+	
+	// The format of the datetime
+	public $format;
+	
+	public function __construct( & $table, $datatype)
+	{
+		// Set the format
+		$this->format = $datatype['format'];
+	}
+}

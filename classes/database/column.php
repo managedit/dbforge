@@ -16,7 +16,7 @@ abstract class Database_Column {
 	 * @param   string	Datatype.
 	 * @return  object	Database column object.
 	 */
-	public static function factory($datatype)
+	public static function factory($datatype, & $table)
 	{
 		// Get the normalised datatype
 		$datatype = $this->table->database->get_type($datatype);
@@ -27,7 +27,7 @@ abstract class Database_Column {
 		// If the class exists return it.
 		if(class_exists($class))
 		{
-			return new $class;
+			return new $class($table);
 		}
 		
 		// Otherwise throw an error, we don't support the column type.
@@ -35,6 +35,10 @@ abstract class Database_Column {
 			'dvr' => $datatype
 		));
 	}
+	
+	/*
+	 * Editable
+	 */
 	
 	// The name of the column
 	public $name;
@@ -57,13 +61,15 @@ abstract class Database_Column {
 	// Whether the column is a unique key or not
 	public $is_unique;
 	
-	// Not editable
+	/*
+	 * Not editable
+	 */
 	
 	// The ordinal position of the column
-	protected $_ordinal_position;
+	public $ordinal_position;
 	
 	// The parent table object
-	protected $_table;
+	public $table;
 	
 	// Whether the column has been loaded from the database or not.
 	protected $_loaded = FALSE;
@@ -72,17 +78,26 @@ abstract class Database_Column {
 	protected $_original_name;
 	
 	/**
-	 * Loads a SQL Information Schema into the column object.
+	 * Create a new column object.
 	 *
-	 * @param   object   The parent table.
-	 * @param	array	The column schema
-	 * @return  object	This column.
+	 * @param	object	The parent table.
+	 * @return	object	This column.
 	 */
-	public function load_schema( & $table, $schema)
+	protected function __construct( & $table, $datatype)
 	{
 		// Set the table by reference.
 		$this->table =& $table;
-		
+	}
+	
+	/**
+	 * Loads a SQL Information Schema into the column object.
+	 *
+	 * @param	object	The parent table.
+	 * @param	array	The column schema
+	 * @return	object	This column.
+	 */
+	public function load_schema($schema)
+	{	
 		// Set the original name
 		$this->_original_name = $this->name = $schema['COLUMN_NAME'];
 		
@@ -131,14 +146,14 @@ abstract class Database_Column {
 	/**
 	 * Allows for column drivers to load specific values from the schema.
 	 * 
-	 * @returns void
+	 * @returns	void
 	 */
 	abstract protected function _init_schema();
 	
 	/**
 	 * Creates the table if it is not already loaded.
 	 * 
-	 * @returns void
+	 * @returns	void
 	 */
 	public function create()
 	{
@@ -151,7 +166,7 @@ abstract class Database_Column {
 	/**
 	 * Drops the loaded column.
 	 * 
-	 * @returns void
+	 * @returns	void
 	 */
 	public function drop()
 	{
@@ -174,7 +189,7 @@ abstract class Database_Column {
 	/**
 	 * Updates the current column if you have modified any properties.
 	 * 
-	 * @returns void
+	 * @returns	void
 	 */
 	public function update()
 	{
@@ -187,7 +202,7 @@ abstract class Database_Column {
 	/**
 	 * Compiles the column into SQL
 	 * 
-	 * @returns string	sql
+	 * @returns	string	sql
 	 */
 	public function compile()
 	{
