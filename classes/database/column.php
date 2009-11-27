@@ -1,6 +1,40 @@
 <?php defined('SYSPATH') or die('No direct script access.');
-
-class Database_Table_Column {
+/**
+ * Database table column object.
+ *
+ * @package		DBForge
+ * @author		Oliver Morgan
+ * @uses		Kohana 3.0 Database
+ * @copyright	(c) 2009 Oliver Morgan
+ * @license		MIT
+ */
+abstract class Database_Column {
+	
+	/**
+	 * Creates a new database column with the specified datatype.
+	 *
+	 * @param   string	Datatype.
+	 * @return  object	Database column object.
+	 */
+	public static function factory($datatype)
+	{
+		// Get the normalised datatype
+		$datatype = $this->table->database->get_type($datatype);
+		
+		// Get the appropriate type
+		$class = 'Database_Column_'.ucfirst($datatype['type']);
+		
+		// If the class exists return it.
+		if(class_exists($class))
+		{
+			return new $class;
+		}
+		
+		// Otherwise throw an error, we don't support the column type.
+		throw new Kohana_Exception('Unsupported database column driver :dvr', array(
+			'dvr' => $datatype
+		));
+	}
 	
 	// The name of the column
 	public $name;
@@ -61,17 +95,19 @@ class Database_Table_Column {
 		// Lets fetch any aditional parametres eg enum()
 		preg_match("/^\S+\((.*?)\)/", $schema['COLUMN_TYPE'], $matches);
 		
-		$this->datatype = $this->table->database->get_type($schema['DATA_TYPE']); 
-				
+		// Normalise and set the datatype
+		$this->datatype = array(
+			$schema['DATA_TYPE'],
+			$this->table->database->get_type($schema['DATA_TYPE']));
+		
+		// Process the datatype parameters
 		if(isset($matches[1]))
 		{
 			// Replace all quotations
 			$params = str_replace('\'', '', $matches[1]);
 					
-			if(strpos($params, ',') === false)
+			if(strpos($params, ',') === FALSE)
 			{
-				$this->table->database->get_type($schema['DATA_TYPE']);
-				
 				// Return value as it is
 				$this->parameters = $params;
 			}
@@ -81,18 +117,23 @@ class Database_Table_Column {
 				$this->parameters = explode(',', $params);
 			}
 		}
-		else
-		{
-			// No additional params
-			$this->datatype = array($schema['DATA_TYPE']);
-		}
 		
-		// Column has been loaded from the database.
-		$this->_loaded = true;
+		// Set the column as loaded.
+		$this->_loaded = TRUE;
+		
+		// Let the specific variables be parsed.
+		$this->_init_schema();
 		
 		// Return the current object.
 		return $this;
 	}
+	
+	/**
+	 * Allows for column drivers to load specific values from the schema.
+	 * 
+	 * @returns void
+	 */
+	abstract protected function _init_schema();
 	
 	/**
 	 * Creates the table if it is not already loaded.
