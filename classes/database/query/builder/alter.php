@@ -181,4 +181,4 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 		$this->_name = NULL;
 	}
 	
-} // END Kohana_Database_Query_Builder_Alter
+} // END Database_Query_Builder_Alter
