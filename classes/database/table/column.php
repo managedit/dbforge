@@ -90,6 +90,7 @@ class Database_Table_Column {
 		// Column has been loaded from the database.
 		$this->_loaded = true;
 		
+		// Return the current object.
 		return $this;
 	}
 	
