@@ -210,6 +210,16 @@ abstract class Database_Column {
 	}
 	
 	/**
+	 * Compiles the column into SQL
+	 * 
+	 * @returns	string	sql
+	 */
+	public function rename($new_name)
+	{
+		
+	}
+	
+	/**
 	 * Compiles the column's datatype.
 	 * 
 	 * @returns string	sql

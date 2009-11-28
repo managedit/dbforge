@@ -20,9 +20,6 @@ class Database_Column_Int extends Database_Column {
 	// The minimum value of the number
 	public $minimum_value;
 	
-	// Whether the number is exact
-	public $is_exact;
-	
 	// The number's precision
 	public $precision;
 	
@@ -39,7 +36,6 @@ class Database_Column_Int extends Database_Column {
 	public function __construct( & $table, $datatype)
 	{
 		// Get the properties out of the datatype
-		$this->is_exact = arr::get($datatype, 'exact', FALSE);
 		$this->maximum_value = arr::get($datatype, 'max', NULL);
 		$this->minimum_value = arr::get($datatype, 'min', NULL);
 		

@@ -200,7 +200,7 @@ class Database_Table {
 	 *
 	 * @return  void.
 	 */
-	public function add_column(Database_Table_Column & $column)
+	public function add_column( Database_Column & $column)
 	{
 		// Set the column table by reference.
 		$column->table =& $this;
