@@ -65,6 +65,13 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 		return $this;
 	}
 	
+	/**
+	 * Rename the column.
+	 *
+	 * @param	Database_Column	The column object.
+	 * @param	string	The new column name.
+	 * @return  void
+	 */
 	public function rename_column( Database_Column $column, $new_name)
 	{
 		// We can only rename loaded columns
