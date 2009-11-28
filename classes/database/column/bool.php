@@ -8,10 +8,4 @@
  * @copyright	(c) 2009 Oliver Morgan
  * @license		MIT
  */
-class Database_Table_Column_Bool extends Database_Table_Column {
-	
-	public function __contruct($datatype)
-	{
-		parent::__construct($datatype);
-	}
-}
+class Database_Table_Column_Bool extends Database_Table_Column { }
