@@ -210,7 +210,7 @@ class Database_Table {
 		{
 			DB::alter($this)
 				->add($column)
-				->execute();
+				->execute($this->_database);
 		}
 		
 		// And just add it to the list of columns.
@@ -226,7 +226,7 @@ class Database_Table {
 	{
 		// Drop the table
 		DB::drop($this)
-			->execute();
+			->execute($this->_database);
 	}
 	
 	/**
@@ -238,7 +238,7 @@ class Database_Table {
 	{
 		// Create this table
 		DB::create($this)
-			->execute();
+			->execute($this->_database);
 	}
 	
 	/**
@@ -257,7 +257,7 @@ class Database_Table {
 		// Rename this table to a new name
 		DB::alter($this)
 			->rename($new_name)
-			->execute();
+			->execute($this->_database);
 			
 		$this->name = $new_name;
 	}

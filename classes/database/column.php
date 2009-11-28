@@ -160,7 +160,7 @@ abstract class Database_Column {
 		// Alter the table
 		DB::alter($this->table)
 			->add($this)
-			->execute();
+			->execute($this->table->database);
 	}
 	
 	/**
@@ -173,7 +173,7 @@ abstract class Database_Column {
 		// Drops the column
 		DB::alter($this->table)
 			->drop($this)
-			->execute();
+			->execute($this->table->database);
 	}
 	
 	/**
@@ -196,7 +196,7 @@ abstract class Database_Column {
 		// Updates the existing column
 		DB::alter($this->table)
 			->modify($this, $this->_original_name)
-			->execute();
+			->execute($this->table->database);
 	}
 	
 	/**
@@ -216,7 +216,9 @@ abstract class Database_Column {
 	 */
 	public function rename($new_name)
 	{
-		
+		DB::alter($this->table)
+			->rename_column($this, $new_name)
+			->execute($this->table->database);
 	}
 	
 	/**
