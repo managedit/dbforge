@@ -136,19 +136,9 @@ abstract class Database_Column {
 		// Set the column as loaded.
 		$this->_loaded = TRUE;
 		
-		// Let the specific variables be parsed.
-		$this->_init_schema();
-		
 		// Return the current object.
 		return $this;
 	}
-	
-	/**
-	 * Allows for column drivers to load specific values from the schema.
-	 * 
-	 * @returns	void
-	 */
-	abstract protected function _init_schema();
 	
 	/**
 	 * Creates the table if it is not already loaded.
