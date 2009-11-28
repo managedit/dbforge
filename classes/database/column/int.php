@@ -42,7 +42,7 @@ class Database_Column_Int extends Database_Column {
 		parent::__construct($table, $datatype);
 	}
 	
-	public function load_schema( & $table, $schema)
+	public function load_schema($schema)
 	{
 		// Integers can be auto_increment
 		$this->is_auto_increment = strpos($schema['EXTRA'], 'auto_increment') !== false;
@@ -54,7 +54,7 @@ class Database_Column_Int extends Database_Column {
 		$this->scale = $schema['NUMERIC_SCALE'];
 		
 		// Let the parent do the rest.
-		parent::load_schema($table, $schema);
+		parent::load_schema($schema);
 	}
 	
 	public function compile_constraints()
