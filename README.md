@@ -32,12 +32,29 @@ Before creating the table we must give it a name and some columns.
 
 This example is going to create a basic user table. The dbforge library will automatically add the table prefix defined in the database you have assigned to the table, so do NOT add it here!
 
-	$column = Database_Column::factory();
-	$column->datatype = 'int';
-	$column->is_nullable = TRUE;
-	$column->is_auto_increment = TRUE;
+	$id = Database_Column::factory('int');
+	$id->name = 'id';
+	$id->is_primary = TRUE;
+	$id->is_nullable = TRUE;
+	$id->is_auto_increment = TRUE;
 
+The above example will setup a column called `id`, which is a primary key, is nullable and is auto increment. The `Database_Column::factory($datatype)` method is necessary for introspection when assigning the column an appropriate column type. If you plan on having your application compatible on multiple database types, its advisable to use SQL-92 standard datatypes. Otherwise you can use database specific datatypes.
 
+	$username = Database_Column::factory('varchar');
+	$username->name = 'username';
+	$username->parameters = 45;
+	$username->is_nullable = FALSE;
+
+The above code will setup a `VARCHAR(45)` column, which is not nullable, and has the name `username`. SQL-92 defines the varchar datatype with the need of 1 parameter to set the maximum length of the string, in this case thats 45. You can leave this as a string or integer, the DBForge module will automatically determine whether its an integer or now, and so how to escape it etc. The parameters property can be given as an array or single value. See the API for more details.
+
+	$table->add_column($id);
+	$table->add_column($username);
+
+The above code will add our two columns to the table object. As the table isn't loaded from the database they will held in an array until the table is created.
+
+	$table->create();
+
+Here is the magic code, at this point, your table along with the columns asigned to it will be created.
 
 ## API Reference
 
