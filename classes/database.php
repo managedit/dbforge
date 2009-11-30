@@ -1,5 +1,12 @@
 <?php defined('SYSPATH') or die('No direct script access.');
-
+/**
+ * Database connection wrapper.
+ *
+ * @package    Database
+ * @author     Kohana Team
+ * @copyright  (c) 2008-2009 Kohana Team
+ * @license    http://kohanaphp.com/license
+ */
 abstract class Database extends Kohana_Database {
 	
 	// Query types
