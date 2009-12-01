@@ -1,20 +1,20 @@
 # DBForge for Kohana 3.0
 
-##Installation
+## Installation
 
-###Requirements
+### Requirements
 * Kohana 3.x
 * Database Module
 
-###Instructions
+### Instructions
 * Copy files to your modules folder.
 * Add DBForge to your list of modules in your boostrap.
 * Happy coding!
 
-## QuickStart Guide
+# User Guide
 Below is a few quick tutorials of how to use this library. Full API listings are given at the end.
 
-#### Creating a table.
+## Creating a table.
 The Database_Table class is a object mapping of a database table. To create a new table object you simply type:
 
 	$table = new Database_Table;
@@ -55,6 +55,17 @@ The above code will add our two columns to the table object. As the table isn't 
 	$table->create();
 
 Here is the magic code, at this point, your table along with the columns asigned to it will be created.
+
+## Dropping tables / columns
+You can either drop a table or a column, here are some brief examples of how to do both.
+
+### Drop Table
+You must either have the loaded table object that corresponds to the table you want to drop, or the table's name.
+
+	DB::Drop('table', 'users')
+		->execute();
+
+The above code will drop the table by the name of `users`.
 
 ## API Reference
 
