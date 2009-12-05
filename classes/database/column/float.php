@@ -12,12 +12,19 @@ class Database_Column_Float extends Database_Column_Int {
 
 	// Whether the number is exact
 	public $is_exact;
-	
-	public function __construct( & $table, $datatype)
-	{
-		// Get the properties out of the datatype
-		$this->is_exact = arr::get($datatype, 'exact', FALSE);
 
-		parent::__construct($table, $datatype);
+	protected function _load_schema($information_schema)
+	{
+		// Set whether the floating number is exact or not, default FALSE
+		$this->is_exact = arr::get($information_schema, 'exact', FALSE);
+	}
+	
+	protected function _compile_parameters()
+	{
+		// FLOAT(SCALE, PRECISION)
+		return array(
+			$this->scale,
+			$this->precision
+		);
 	}
 }

@@ -10,16 +10,12 @@
  */
 class Database_Column_Datetime extends Database_Column {
 	
-	/*
-	 * Not editable
-	 */
-	
 	// The format of the datetime
 	public $format;
 	
-	public function __construct( & $table, $datatype)
+	// Set the datetime format
+	protected function _load_schema($information_schema)
 	{
-		// Set the format
-		$this->format = $datatype['format'];
+		$this->format = arr::get($information_schema, 'format');
 	}
 }

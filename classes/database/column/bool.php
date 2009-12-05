@@ -1,6 +1,6 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 /**
- * Database table object.
+ * Database table boolean column.
  *
  * @package		DBForge
  * @author		Oliver Morgan
@@ -8,4 +8,4 @@
  * @copyright	(c) 2009 Oliver Morgan
  * @license		MIT
  */
-class Database_Table_Column_Bool extends Database_Table_Column { }
+class Database_Column_Bool extends Database_Column { }

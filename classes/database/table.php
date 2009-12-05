@@ -10,20 +10,62 @@
  */
 class Database_Table {
 	
+	/**
+	 * Retrieves the instance of an existing database table.
+	 *
+	 * @param   string   The name of the table.
+	 * @param	Database	The database instance (optional).
+	 * @return  object	The table object.
+	 */
+	public static function instance($name, Database $database = NULL)
+	{
+		// Get a default instance of the database if none is set.
+		if($database === NULL)
+		{
+			$database = Database::instance();
+		}
+		
+		// Get the table schema for the given name
+		$table_schema = $database->list_tables($name);
+		
+		// Throw an exception if the schema could not be found
+		if(empty($table_schema))
+		{
+			throw new Kohana_Exception('Unable to find table tbl', array(
+				'tbl' => $name
+			));
+		}
+		
+		// Return a new table object with everything we need.
+		return new self($database, $table_schema);
+	}
+	
 	// The parent database
-	protected $_database;
+	public $database;
 	
 	// The name of the table
-	protected $_name;
+	public $name;
 	
-	// The name of the catalog
-	protected $_catalog;
+	// The type of the table
+	public $type;
 	
 	// Whether the table is loaded or not
 	protected $_loaded = FALSE;
 	
+	// The list of primary keys
+	protected $_primary_keys = array();
+	
+	// The list of unique keys
+	protected $_unique_keys = array();
+	
 	// The array of columns
 	protected $_columns = array();
+	
+	// The array of user defined constraints
+	protected $_constraints = array();
+	
+	// Table options used in compilation
+	protected $_options = array();
 	
 	/**
 	 * Creates a new table object.
@@ -47,36 +89,11 @@ class Database_Table {
 		if($information_schema !== NULL)
 		{
 			// These properties are supported by ISO standards
-			$this->_name = $information_schema['TABLE_NAME'];
-			$this->_catalog = $information_schema['TABLE_CATALOG'];
+			$this->name = $information_schema['table_name'];
+			$this->type = $information_schema['table_type'];
 			
 			// Identify the object as loaded from live table data.
-			$this->_loaded = true;
-		}
-	}
-	
-	/**
-	 * Gets read-only properties of the table.
-	 *
-	 * @param   string   The property name.
-	 * @returns	object	The requested property.
-	 */
-	public function __get($name)
-	{
-		// Get table properties
-		switch($name)
-		{
-			// Returns the database.
-			case 'database':
-				return $this->_database;
-			
-			// Returns the name of the table.
-			case 'name':
-				return $this->_name;
-				
-			// Returns the catalog name.
-			case 'catalog':
-				return $this->_catalog;
+			$this->_loaded = TRUE;
 		}
 	}
 	
@@ -98,8 +115,8 @@ class Database_Table {
 	public function truncate()
 	{
 		// Truncate the table.
-		DB::truncate($this)
-			->execute($this->_database);
+		DB::truncate($this->name)
+			->execute($this->database);
 	}
 	
 	/**
@@ -110,89 +127,16 @@ class Database_Table {
 	 */
 	public function columns($like = NULL)
 	{
-		// If the table hasn't been loaded then return any user defined columns.
-		if( ! $this->_loaded)
+		// If like is not set, return all the columns
+		if($like === NULL)
 		{
-			// Return the column array, or the column that matches the like param
-			return $like === NULL ? $this->_columns : $this->_columns[$like];
+			return $this->_columns;
 		}
-		
-		// Get all the columns
-		$columns = $this->_database->list_columns($this->name, $like);
-		
-		// Foreach column in the data array
-		foreach($columns as & $column)
+		else
 		{
-			// Create a new column object
-			$col = new Database_Table_Column();
-			
-			// Load the schema and replace it with the column object
-			$column = $col->load_schema($this, clone $column);
+			// Return the exact column
+			return $this->_columns[$like];
 		}
-		
-		// Get the columns from the information schema.
-		return $columns;
-	}
-	
-	/**
-	 * Compiles the table's constraints and returns the SQL.
-	 *
-	 * @return  string	sql
-	 */
-	public function compile_constraints()
-	{
-		// Get everything ready
-		$db = $this->database;
-		$columns = $this->columns(true);
-		
-		$primary_keys = array();
-		$unique_keys = array();
-		
-		// Loop through each column and add them to the key arrays where appropriate.
-		foreach($columns as $column)
-		{
-			if($column->is_primary)
-			{
-				// Primary key
-				$primary_keys[] = $column;
-			}
-			elseif($column->is_unique)
-			{
-				// Unique key
-				$unique_keys[] = $column;
-			}
-		}
-		
-		// Constraints are the standard name for keys
-		$constrains = array();
-		
-		// Lets compile the primary keys, prefixed with 'pk_'
-		// Naming scheme: pk_{0}_{1}...
-		$key_name = 'pk_';
-		$keys = '';
-		
-		// Add each primary key column to the name and the params.
-		foreach($primary_keys as $name => $key)
-		{
-			$key_name .= $key->name.'_';
-			$keys .= $db->quote_identifier($key->name).',';
-		}
-		
-		// Remove trailing deliminers
-		$key_name = rtrim($key_name, '_');
-		$keys = rtrim($keys, ',');
-		
-		// Add the sql to the list of constraints
-		$constrains[] = 'CONSTRAINT '.$key_name.' PRIMARY KEY ('.$keys.')';
-		
-		// Do the same for unique keys, this is easier as unique keys shouldnt be composite!
-		foreach($unique_keys as $key)
-		{
-			$constrains[] = 'CONSTRAINT key_'.$key->name.' UNIQUE('.$db->quote_identifier($key->name).')';
-		}
-		
-		// Return the imploded constraint array csv.
-		return implode(',', $constrains);
 	}
 	
 	/**
@@ -200,10 +144,10 @@ class Database_Table {
 	 *
 	 * @return  void.
 	 */
-	public function add_column( Database_Column & $column)
+	public function add_column( Database_Column $column)
 	{
 		// Set the column table by reference.
-		$column->table =& $this;
+		$column->table = $this;
 		
 		// If this table is loaded, add the column to the database.
 		if($this->_loaded)
@@ -225,8 +169,8 @@ class Database_Table {
 	public function drop()
 	{
 		// Drop the table
-		DB::drop($this)
-			->execute($this->_database);
+		DB::drop('table', $this->name)
+			->execute($this->database);
 	}
 	
 	/**
@@ -237,8 +181,8 @@ class Database_Table {
 	public function create()
 	{
 		// Create this table
-		DB::create($this)
-			->execute($this->_database);
+		DB::create($this->compile())
+			->execute($this->database);
 	}
 	
 	/**
@@ -260,6 +204,143 @@ class Database_Table {
 			->execute($this->_database);
 			
 		$this->name = $new_name;
+	}
+	
+	/**
+	 * Adds a constraint to the table.
+	 *
+	 * @param	Database_Constraint	The constraint object.
+	 * @return  void.
+	 */
+	public function add_constraint(Database_Constraint $constraint)
+	{
+		// Add it to the array
+		$this->_constraints[] = $constraint;
+	}
+	
+	/**
+	 * Retrieves an existing table option.
+	 *
+	 * @param	string	The keyword which the option was defined with, if you're looking for something specific.
+	 * @return  array	The list of options.
+	 * @return	array	The single array you were looking for.
+	 */
+	public function options($keyword = NULL)
+	{
+		if($keyword === NULL)
+		{
+			return $this->_options;
+		}
+		else
+		{
+			return $this->_options[$keyword];
+		}
+	}
+	
+	/**
+	 * Adds a table option.
+	 * 
+	 * Table options are appended to the end of the create statement, typically in MySQL here you would set
+	 * the database engine, auto_increment offset, comments etc. Consult your database documentation for
+	 * more information.
+	 * 
+	 * On comilation a typical output would be; KEYWORD=`value` or if value is not set; KEYWORD
+	 * 
+	 * @see http://dev.mysql.com/doc/refman/5.1/en/create-table.html
+	 *
+	 * @param	string	The keyword of the option.
+	 * @param	string	The value associated with the keyword. This is completely optional depending on your needs.
+	 * @return  void.
+	 */
+	public function add_option($keyword, $value = NULL)
+	{
+		// If a value was not set, just add the value to the array
+		if($value === NULL)
+		{
+			$this->options[] = $value;
+		}
+		else
+		{
+			$this->_options[$keyword] = $value;
+		}
+	}
+	
+	/**
+	 * Adds a constraint to the table.
+	 *
+	 * @param	string	The name of the constraint you're looking for
+	 * @return  array	The list of all the columns
+	 * @return	Database_Constraint The constraint object
+	 */
+	public function constraints($like = NULL)
+	{
+		// If we have nothing to find, then return them all
+		if ($like === NULL)
+		{
+			return $this->_constraints;
+		}
+		else
+		{
+			// Otherwise return what they are looking for
+			return $this->_constraints[$like];
+		}
+	}
+	
+	public function reset()
+	{
+		// Get a list of columns from the database for this table
+		$columns = $this->database->list_columns($this->name);
+		
+		// Reset the column array
+		$this->_columns = array();
+		
+		// Loop through each column, and add it to the column array
+		foreach($columns as $name => $column)
+		{
+			$this->_columns[$name] = Database_Column::instance($this, $name);
+		}
+	}
+	
+	public function compile()
+	{
+		// Pull everything together and return it as an array.
+		return array(
+			'name' => $this->name,
+			'columns' => $this->_compile_columns(),
+			'constraints' => $this->_compile_constraints(),
+			'options' => $this->options()
+		);
+	}
+	
+	protected function _compile_constraints()
+	{
+		// Get a list of constraints
+		$constraints = $this->constraints();
+		
+		// Foreach constraint, compile it
+		foreach($constraints as $name => & $constraint)
+		{
+			$constraint = $constraint->compile($this->database);
+		}
+		
+		// Return the compiled array
+		return $constraints;
+	}
+	
+	protected function _compile_columns()
+	{
+		// Get a list of columns
+		$columns = $this->columns();
+		
+		// Loop through every column and change the object to an array
+		foreach($columns as $name => & $column)
+		{
+			// Compile the column and set it
+			$column = $column->compile($this->database);
+		}
+		
+		// Return the column array
+		return $columns;
 	}
 	
 	/**

@@ -12,7 +12,7 @@ class Database_Query_Builder_Truncate extends Database_Query_Builder {
 	// The name of the table we're about to truncate
 	protected $_table;
 	
-	public function __construct( Database_Table $table)
+	public function __construct($table)
 	{
 		// Set the table object.
 		$this->_table = $table;
@@ -24,7 +24,13 @@ class Database_Query_Builder_Truncate extends Database_Query_Builder {
 	public function compile( Database $db)
 	{
 		// Return the SQL, its straightforward.
-		return 'TRUNCATE TABLE '.$db->quote_table($this->_table->name);
+		return 'TRUNCATE TABLE '.$db->quote_table($this->_table);
+	}
+	
+	public function reset()
+	{
+		// Reset the table name
+		$this->_table = NULL;
 	}
 	
 } //END Database_Query_Builder_Truncate

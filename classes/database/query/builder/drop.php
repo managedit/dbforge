@@ -10,56 +10,57 @@
 class Database_Query_Builder_Drop extends Database_Query_Builder {
 	
 	// The object thats going to be dropped.
-	protected $_object;
+	protected $_name;
 	
 	// The type of the object we're going to drop.
 	protected $_drop_type;
 	
-	public function __construct($type, $object)
+	public function __construct($type, $name)
 	{
 		// Set the type of the object we're about to drop.
 		$this->_drop_type = $type;
 		
 		// Set the object we're going to drop.
-		$this->_object = $object;
+		$this->_name = $name;
 		
 		// Because mummy says so.
 		parent::__construct(Database::DROP, '');
 	}
 	
 	public function compile(Database $db)
-	{	
+	{
 		// Lets identify the type
-		switch($this->_drop_type)
+		switch(strtolower($this->_drop_type))
 		{
 			// We're dropping an entire database!
 			case 'database':
-				return 'DROP DATABASE '.$db->quote($this->_object->name);
+				return 'DROP DATABASE '.$db->quote($this->_name);
 			
 			// Just a table to be dropped.
 			case 'table':
-				return 'DROP TABLE '.$db->quote_table($this->_object->name);
+				return 'DROP TABLE '.$db->quote_table($this->_name);
 				
 			// A column to be dropped.
 			case 'column':
-				return 'DROP COLUMN '.$db->quote_identifier($this->_object->name);
+				return 'DROP COLUMN '.$db->quote_identifier($this->_name);
+				
+			// A column to be dropped.
+			case 'constraint':
+				return 'DROP CONSTRAINT '.$db->quote_identifier($this->_name);
 				
 			// Something we did not recognise.
 			default:
-				throw new Database_Exception('Invalid drop object :obj', array(
-					'obj' => $this->_drop_type
+				throw new Database_Exception('Invalid drop type :typ', array(
+					'typ' => $this->_type
 				));
 		}
-		
-		// Return the SQL.
-		return $query;
 	}
 	
 	public function reset()
 	{
 		// Reset objects.
-		$this->_drop_type =
-		$this->_object = NULL;
+		$this->_type =
+		$this->_name = NULL;
 	}
 	
 } //END Database_Query_Builder_Drop

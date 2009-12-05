@@ -25,7 +25,7 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	protected $_drop_columns = array();
 	
 	// Columns to rename.
-	protected $_renam_columns = array();
+	protected $_rename_columns = array();
 	
 	
 	/**
@@ -34,16 +34,9 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	 * @param   string The table name
 	 * @return  void
 	 */
-	public function __construct( Database_Table $table)
+	public function __construct($table)
 	{
-		if( ! $table->loaded())
-		{
-			throw new Database_Exception('Table tbl must be loaded to perform alter queries.', array(
-				'tbl' => $table->name
-			));
-		}
-		
-		// Set the table object.
+		// Set the table name.
 		$this->_table = $table;
 		
 		// Because mummy says so.
@@ -68,18 +61,12 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	/**
 	 * Rename the column.
 	 *
-	 * @param	Database_Column	The column object.
+	 * @param	string	The current column name.
 	 * @param	string	The new column name.
 	 * @return  void
 	 */
-	public function rename_column( Database_Column $column, $new_name)
+	public function rename_column($old_name, $new_name)
 	{
-		// We can only rename loaded columns
-		if( ! $column->loaded())
-		{
-			throw new Kohana_Exception('Column must be loaded to rename it.');
-		}
-		
 		// Add it to the rename column array
 		$this->_renam_columns[$new_name] = $column;
 	}
@@ -87,44 +74,30 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	/**
 	 * Add a column
 	 *
-	 * @param   object The column object.
+	 * @param   array The column data array.
 	 * @return  void
 	 */
-	public function add( Database_Column $column)
+	public function add_column( array $column)
 	{
-		if($column->loaded())
-		{
-			$column = clone $column;
-		}
-		
 		$this->_add_columns[] = $column;
 		
 		return $this;
 	}
 	
+	public function add_constraint( array $constraint)
+	{
+		
+	}
+	
 	/**
 	 * Modify a column.
 	 *
-	 * @param	string	The name of the column you wish to modify.
-	 * @param   object	The new column data.
+	 * @param   array	The altered column array. To rename a column, see the rename_column() method.
 	 * @return  void
 	 */
-	public function modify( Database_Column $new_column, $existing_column)
+	public function modify(varray $modified_column)
 	{
-		if ( ! is_object($existing_column))
-		{
-			$existing_column = $this->_table->columns(true, $existing_column);
-			
-			if(count($existing_column) !== 1)
-			{
-				throw new Database_Exception('col could not be found in tbl', array(
-					'col' => ucfirst($existing_column),
-					'tbl' => $this->_table->name
-				));
-			}
-		}
-		
-		$this->_modify_columns[$existing_column->name] = $new_column;
+		$this->_modify_columns[] = $modified_column;
 		
 		return $this;
 	}
@@ -151,10 +124,7 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	public function compile( Database $db)
 	{
 		// Initiate the alter statement
-		$sql = 'ALTER TABLE '.$db->quote_table($this->_table->name).' ';
-		
-		// Each command will be added to this array
-		$lines = array();
+		$sql = 'ALTER TABLE '.$db->quote_table($this->_table).' ';
 		
 		// If we have a name set, rename the table.
 		if ($this->_name !== NULL)
@@ -163,23 +133,24 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 		}
 		
 		// If we have any columns to rename do so
-		if(count($this->_rename_columns) > 0)
+		if (count($this->_rename_columns) > 0)
 		{
 			// Loop through each column and compile the SQL.
-			foreach($this->_rename_columns as $new_name => $column)
+			foreach($this->_rename_columns as $old_name => $new_name)
 			{
-				$sql .= 'RENAME COLUMN '.$column->name.' TO '.$new_name.'; ';
+				$sql .= 'RENAME COLUMN '.$db->quote_identifier($old_name).'
+				TO '.$db->quote_identifier($new_name).'; ';
 			}
 		}
 		
 		// If we have columns to add, add them.
-		if (count($this->_add_columns) > 0)
+		elseif (count($this->_add_columns) > 0)
 		{
 			// Array of column SQL.
 			$columns = array();
 			
 			// Intiate the add statement
-			$sql .= 'ADD ';
+			$sql .= 'ADD (';
 			
 			// Foreach column, compile it and add it to the column array
 			foreach($this->_add_columns as $column)
@@ -187,46 +158,53 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 				$columns[] = Database_Query_Builder::compile_column($column);
 			}
 			
-			// Implode the array, and seperate it with a commar.
-			$sql .= implode($columns, ',').' ';
+			// Implode the array, and seperate it with a commar and close the bracket.
+			$sql .= implode($columns, ',').'); ';
 		}
 		
 		// If we have any columns to modify then modify them.
-		if (count($this->_modify_columns) > 0)
+		elseif (count($this->_modify_columns) > 0)
 		{
 			// Array of column SQL.
 			$columns = array();
 			
 			// Initiate the modify statement.
-			$sql .= 'MODIFY ';
+			$sql .= 'MODIFY (';
 			
 			// Foreach column, compile it in the appropriate way
-			foreach($this->_modify_columns as $original_name => $column)
+			foreach($this->_modify_columns as $modified_column)
 			{
-				$columns[] = Database_Query_Builder::compile_column($column);
+				$columns[] = Database_Query_Builder::compile_column($modified_column);
 			}
 			
-			$sql .= implode($columns, ',').'; ';
+			$sql .= implode($columns, ',').'); ';
 		}
 		
-		if (count($this->_drop_columns) > 0)
+		// If we have some columns to drop, then drop them
+		elseif (count($this->_drop_columns) > 0)
 		{
+			// Foreach drop column, get the SQL and create a statement for it.
 			foreach($this->_drop_columns as $column)
 			{
 				$drop = new Database_Query_Builder_Drop('column', $column);
-				$sql .= $drop->compile($column->table->database).';';
+				$sql .= $drop->compile($db).';';
 			}
 		}
 		
+		// return the SQL.
 		return $sql;
 	}
 	
 	public function reset()
 	{
+		// Reset the arrays
 		$this->_add_columns = 
 		$this->_modify_columns = 
+		$this->_rename_columns =
 		$this->_drop_columns = array();
 		
+		// Reset the names
+		$this->_table =
 		$this->_name = NULL;
 	}
 	

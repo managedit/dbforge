@@ -7,15 +7,15 @@
  * @copyright  (c) 2009 Kohana Team
  * @license    http://kohanaphp.com/license.html
  */
-class Kohana_DB {
+class DB extends Kohana_DB {
 	
 	/**
 	 * Create a new alter table query.
 	 *
-	 * @param   object   The table object to alter.
+	 * @param   string   The name of the table to alter.
 	 * @return  Database_Query_Alter
 	 */
-	public static function alter( Database_Table $table)
+	public static function alter($table)
 	{
 		return new Database_Query_Builder_Alter($table);
 	}
@@ -23,10 +23,10 @@ class Kohana_DB {
 	/**
 	 * Create a new create table query.
 	 *
-	 * @param   object   The unloaded table object to create.
+	 * @param   array   The table array to create.
 	 * @return  Database_Query_Create
 	 */
-	public static function create( Database_Table $table)
+	public static function create( array $table)
 	{
 		return new Database_Query_Builder_Create($table);
 	}
@@ -34,8 +34,8 @@ class Kohana_DB {
 	/**
 	 * Create a new drop query.
 	 *
-	 * @param   string	 The object type to drop; 'database', 'table' or 'column'.
-	 * @param   object   The object to drop.
+	 * @param   string	 The type of object to drop; 'database', 'table', 'column' or 'constraint.
+	 * @param   string   The name of the object to drop.
 	 * @return  Database_Query_Drop
 	 */
 	public static function drop($type, $object)
@@ -46,12 +46,12 @@ class Kohana_DB {
 	/**
 	 * Creates a new table truncate query.
 	 *
-	 * @param   object   Table object to truncate.
+	 * @param   string   The table name to truncate.
 	 * @return  Database_Query_Truncate
 	 */
-	public static function truncate( Database_Table $object)
+	public static function truncate($table)
 	{
-		return new Database_Query_Builder_Truncate($object);
+		return new Database_Query_Builder_Truncate($table);
 	}
 
 } // End DB

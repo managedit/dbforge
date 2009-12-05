@@ -10,35 +10,68 @@
  */
 abstract class Database_Column {
 	
+	// Lets define some default column datatypes
+	const STRING 	= 'varchar';
+	const BINARY 	= 'blob';
+	const BOOL	 	= 'boolean';
+	const DATETIME 	= 'timestamp';
+	const FLOAT		= 'float';
+	const INT		= 'int';
+	
 	/**
 	 * Creates a new database column with the specified datatype.
 	 *
-	 * @param   string	Datatype.
-	 * @return  object	Database column object.
+	 * @param	Database_Table	The parent table object.
+	 * @param   string	The datatype of the column.
+	 * @return  Database_Column	Database column object.
 	 */
-	public static function factory($datatype, & $table)
+	public static function factory($table, $datatype)
 	{
 		// Get the normalised datatype
-		$datatype = $this->table->database->get_type($datatype);
+		$schema = $table->database->datatype($datatype);
+		$schema['data_type'] = $datatype;
 		
 		// Get the appropriate type
-		$class = 'Database_Column_'.ucfirst($datatype['type']);
+		$class = 'Database_Column_'.ucfirst($schema['type']);
 		
 		// If the class exists return it.
 		if(class_exists($class))
 		{
-			return new $class($table);
+			return new $class($table, $schema);
+		}
+		
+		// Otherwise throw an error, we don't support the column type.
+		throw new Kohana_Exception('Unsupported database column driver dvr', array(
+			'dvr' => $class
+		));
+	}
+	
+	/**
+	 * Retrieves an instance of a database column in a table.
+	 *
+	 * @param   Database_Table	The parent table object.
+	 * @param	string	The name of the column.
+	 * @return  object	Database column object.
+	 */
+	public static function instance($table, $name)
+	{
+		// Get the column's information schema
+		$schema = $table->columns($name);
+		
+		// Get the appropriate type
+		$class = 'Database_Column_'.ucfirst($schema['type']);
+		
+		// If the class exists return it.
+		if(class_exists($class))
+		{
+			return new $class($table, $schema, TRUE);
 		}
 		
 		// Otherwise throw an error, we don't support the column type.
 		throw new Kohana_Exception('Unsupported database column driver :dvr', array(
-			'dvr' => $datatype
+			'dvr' => $schema['type']
 		));
 	}
-	
-	/*
-	 * Editable
-	 */
 	
 	// The name of the column
 	public $name;
@@ -60,11 +93,7 @@ abstract class Database_Column {
 	
 	// Whether the column is a unique key or not
 	public $is_unique;
-	
-	/*
-	 * Not editable
-	 */
-	
+
 	// The ordinal position of the column
 	public $ordinal_position;
 	
@@ -80,96 +109,94 @@ abstract class Database_Column {
 	/**
 	 * Create a new column object.
 	 *
-	 * @param	object	The parent table.
-	 * @return	object	This column.
+	 * @param	Database_Table	The parent table.
+	 * @param	array	The column SQL92 information schema.
+	 * @param	bool	Whether the column information schema was generated from the database.
+	 * @return	object	The column object.
 	 */
-	protected function __construct( & $table, $datatype)
+	private final function __construct($table, array $information_schema = NULL, $from_db = FALSE)
 	{
 		// Set the table by reference.
-		$this->table =& $table;
+		$this->table = $table;
+		
+		if($information_schema !== NULL)
+		{
+			// Set the original name and current name to the same thing
+			$this->_original_name = $this->name = arr::get($information_schema, 'column_name');
+			
+			// Set some ISO standard params
+			$this->default 			= arr::get($information_schema, 'column_default');
+			$this->is_nullable 		= arr::get($information_schema, 'is_nullable')	== 'YES';
+			$this->is_primary 		= arr::get($information_schema, 'column_key')	== 'PRI';
+			$this->is_unique 		= arr::get($information_schema, 'column_key')	== 'UNI';
+			$this->ordinal_position = arr::get($information_schema, 'ordinal_position');
+			
+			// Normalise and set the datatype and any parameters
+			$this->datatype = arr::get($information_schema, 'data_type');
+			$this->parameters = arr::get($information_schema, 'parameters');
+			
+			// Let column drivers manage the schema themselves
+			$this->_load_schema($information_schema);
+			
+			// Set the column as loaded.
+			$this->_loaded = $from_db;
+		}
 	}
 	
 	/**
 	 * Loads a SQL Information Schema into the column object.
 	 *
-	 * @param	object	The parent table.
-	 * @param	array	The column schema
-	 * @return	object	This column.
+	 * @param	array	The column's information schema
+	 * @return	void
 	 */
-	public function load_schema($schema)
-	{	
-		// Set the original name
-		$this->_original_name = $this->name = $schema['COLUMN_NAME'];
-		
-		// Set some ISO standard params
-		$this->default = $schema['COLUMN_DEFAULT'];
-		$this->is_nullable = $schema['IS_NULLABLE'] == 'YES';
-		$this->is_primary = $schema['COLUMN_KEY'] == 'PRI';
-		$this->ordinal_position = $schema['ORDINAL_POSITION'];
-		
-		// Lets fetch any aditional parametres eg enum()
-		preg_match("/^\S+\((.*?)\)/", $schema['COLUMN_TYPE'], $matches);
-		
-		// Normalise and set the datatype
-		$this->datatype = array(
-			$schema['DATA_TYPE'],
-			$this->table->database->get_type($schema['DATA_TYPE']));
-		
-		// Process the datatype parameters
-		if(isset($matches[1]))
-		{
-			// Replace all quotations
-			$params = str_replace('\'', '', $matches[1]);
-					
-			if(strpos($params, ',') === FALSE)
-			{
-				// Return value as it is
-				$this->parameters = $params;
-			}
-			else
-			{
-				// Comma seperated values are exploded into an array
-				$this->parameters = explode(',', $params);
-			}
-		}
-		
-		// Set the column as loaded.
-		$this->_loaded = TRUE;
-		
-		// Return the current object.
-		return $this;
-	}
+	abstract protected function _load_schema($information_schema);
 	
 	/**
 	 * Creates the table if it is not already loaded.
 	 * 
-	 * @returns	void
+	 * @return	void
 	 */
 	public function create()
 	{
+		// If the table is loaded it can't be created
+		if($this->loaded())
+		{
+			throw new Kohana_Exception('Unable to create loaded column :col', array(
+				'col' => $this->name
+			));
+		}
+		
 		// Alter the table
-		DB::alter($this->table)
-			->add($this)
+		DB::alter($this->table->name)
+			->add($this->compile())
 			->execute($this->table->database);
 	}
 	
 	/**
 	 * Drops the loaded column.
 	 * 
-	 * @returns	void
+	 * @return	void
 	 */
 	public function drop()
 	{
+		// You cannot drop a column that doesnt exist
+		if( ! $this->loaded())
+		{
+			throw new Kohana_Exception('Unable to drop unloaded column :col', array(
+				'col' => $this->name
+			));
+		}
+		
 		// Drops the column
-		DB::alter($this->table)
-			->drop($this)
+		DB::alter($this->table->name)
+			->drop($this->name)
 			->execute($this->table->database);
 	}
 	
 	/**
 	 * Creates the table if it is not already loaded.
 	 * 
-	 * @returns	bool	Whether the column is loaded or not.
+	 * @return	bool	Whether the column is loaded or not.
 	 */
 	public function loaded()
 	{
@@ -179,92 +206,93 @@ abstract class Database_Column {
 	/**
 	 * Updates the current column if you have modified any properties.
 	 * 
-	 * @returns	void
+	 * @return	void
 	 */
 	public function update()
 	{
+		if( ! $this->loaded())
+		{
+			throw new Kohana_Exception('Unable to modify an unloaded column :col', array(
+				'col'	=> $this->name
+			));
+		}
+		
 		// Updates the existing column
 		DB::alter($this->table)
-			->modify($this, $this->_original_name)
+			->modify($this->compile(), $this->_original_name)
 			->execute($this->table->database);
 	}
 	
 	/**
-	 * Compiles the column into SQL
+	 * Compiles the column object into an array. This can be then used in the query builder.
 	 * 
-	 * @returns	string	sql
+	 * @return	array	The column array.
 	 */
 	public function compile()
 	{
-		return Database_Query_Builder::compile_column($this);
+		// Bring everything together and return the array
+		return array(
+			'name' => $this->name,
+			'datatype' => array($this->datatype => $this->_compile_parameters()),
+			'constraints' => $this->_compile_constraints()
+		);
 	}
 	
 	/**
-	 * Compiles the column into SQL
+	 * Renames the column.
 	 * 
-	 * @returns	string	sql
+	 * @return	void
 	 */
 	public function rename($new_name)
 	{
-		DB::alter($this->table)
-			->rename_column($this, $new_name)
+		// If the column isn't loaded then it can't be renamed
+		if( ! $this->loaded())
+		{
+			throw new Kohana_Exception('Unable to rename unloaded column :col', array(
+				'col'	=> $this->name
+			));
+		}
+		
+		// Perform the query
+		DB::alter($this->table->name)
+			->rename_column($this->name, $new_name)
 			->execute($this->table->database);
 	}
 	
 	/**
-	 * Compiles the column's datatype.
+	 * Prepares the column's parameters.
 	 * 
-	 * @returns string	sql
+	 * @return	array	The column's datatype
 	 */
-	public function compile_datatype()
+	protected function _compile_parameters()
 	{
-		// Get the table's database
-		$db = $this->table->database;
-		
-		// Get the datatype and parameters
-		$type = $this->datatype;
-		$params = $this->parameters;
-		
-		$sql = strtoupper($type);
-		
-		// Compile datatype params
-		if(is_array($params) AND count($params) > 0)
-		{
-			// Add it to the sql
-			$sql .= '('.implode(array_map(array($db, 'escape'), $params), ',').')';
-		}
-		elseif (isset($params))
-		{			
-			// Add it to the sql
-			$sql .= '('.$db->escape($params).')';
-		}
-		
-		return $sql;
+		// Return the column's parameters
+		return $this->parameters;
 	}
-	
+
 	/**
-	 * Compiles the column's constraints.
+	 * Compiles the column constraints into an array
 	 * 
-	 * @returns string	sql
+	 * @return	array	Column constraints.
 	 */
-	public function compile_constraints()
+	protected function _compile_constraints()
 	{
-		$db = $this->table->database;
+		// Prepare the constraints array
+		$constraints = array();
 		
-		$sql = '';
-		
-		// Compile nullable constraint
+		// Compile the not null constraint
 		if( ! $this->is_nullable)
 		{
-			$sql .= 'NOT NULL ';
+			$constraints[] = 'not null';
 		}
 		
-		// Compile default constraint
-		if($this->default != NULL)
+		// Compile the default constraint
+		if(isset($this->default))
 		{
-			$sql .= 'DEFAULT '.$db->escape($column->default);
+			$constraints['default'] = $this->default;
 		}
 		
-		return $sql;
+		// Return the constraints array
+		return $constraints;
 	}
 }

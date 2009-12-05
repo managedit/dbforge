@@ -12,18 +12,9 @@ class Database_Query_Builder_Create extends Database_Query_Builder {
 	// The table object we're working with.
 	protected $_table;
 	
-	public function __construct( Database_Table $table)
-	{
-		// Check if the table is already loaded
-		if($table->loaded())
-		{
-			// You cannot create a table that already exist in the database.
-			throw new Database_Exception('Cannot create loaded table :tbl. Try using the ALTER query instead.', array(
-				$table->name
-			));
-		}
-		
-		// Set the table object
+	public function __construct( array $table)
+	{		
+		// Set the table array
 		$this->_table = $table;
 		
 		// Because mummy says so
@@ -33,29 +24,38 @@ class Database_Query_Builder_Create extends Database_Query_Builder {
 	public function compile(Database $db)
 	{
 		// Start with the basic syntax.
-		$sql = 'CREATE TABLE '.$db->quote_table($this->_table->name);
+		$sql = 'CREATE TABLE '.$db->quote_table($this->_table['name']);
 		
 		// You are allowed to create a table without any columns. Dont ask me why.
-		if(count($this->_table->columns()) > 0)
+		if(count($this->_table['columns']) > 0)
 		{
 			// Get ready for the column data.
 			$sql .= ' (';
 			
-			$columns = array();
-			
-			// Fetch all the columns and loop through them individually.
-			foreach($this->_table->columns(true) as $column)
+			// Compile the columns in the normal way.
+			foreach($this->_table['columns'] as $name => $data)
 			{
-				// Compile the column and add it to the array.
-				$columns[] = $column->compile();
+				$sql .= Database_Query_Builder::compile_column($db, $data).',';
+			}
+			
+			// Compile constraints in a normal way
+			foreach($this->_table['constraints'] as $name => $data)
+			{
+				$sql .= Database_Query_Builder::compile_constraint($db, $data).',';
 			}
 			
 			// Seperate the columns with commars, and add the table constraints at the end.
-			$sql .= implode($columns, ',').','.$this->_table->compile_constraints().')';
+			$sql = rtrim($sql, ',').') ';
 		}
 		
-		// Finally return the sql.
-		return $sql.';';
+		// Process table options
+		foreach($this->_table['options'] as $key => $option)
+		{
+			$sql .= Database_Query_Builder::compile_statement(array($key => $option)).' ';
+		}
+		
+		// Remove the trailing space.
+		return rtrim($sql, ' ').';';
 	}
 	
 	public function reset()

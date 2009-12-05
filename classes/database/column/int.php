@@ -10,10 +10,6 @@
  */
 class Database_Column_Int extends Database_Column {
 	
-	/*
-	 * Not editable
-	 */
-	
 	// The maximum value of the number
 	public $maximum_value;
 	
@@ -25,52 +21,43 @@ class Database_Column_Int extends Database_Column {
 	
 	// The number's scale
 	public $scale;
-	
-	/*
-	 * Editable
-	 */
-	
+
 	// Is the field an auto_increment
 	public $is_auto_increment;
 	
-	public function __construct( & $table, $datatype)
-	{
-		// Get the properties out of the datatype
-		$this->maximum_value = arr::get($datatype, 'max', NULL);
-		$this->minimum_value = arr::get($datatype, 'min', NULL);
-		
-		parent::__construct($table, $datatype);
-	}
-	
-	public function load_schema($schema)
+	protected function _load_schema($information_schema)
 	{
 		// Integers can be auto_increment
-		$this->is_auto_increment = strpos($schema['EXTRA'], 'auto_increment') !== false;
+		$this->is_auto_increment = strpos(arr::get($information_schema, 'extra'), 'auto_increment') !== false;
 		
 		// Set the numeric precision 
-		$this->precision = $schema['NUMERIC_PRECISION'];
+		$this->precision = arr::get($information_schema, 'numeric_precision');
 		
 		// Set the numeric scale
-		$this->scale = $schema['NUMERIC_SCALE'];
+		$this->scale = arr::get($information_schema, 'numeric_scale');
 		
-		// Let the parent do the rest.
-		parent::load_schema($schema);
+		// Set the maximum and minimum values
+		$this->maximum_value = arr::get($information_schema, 'max');
+		$this->minimum_value = arr::get($information_schema, 'min');
 	}
 	
-	public function compile_constraints()
+	protected function _compile_constraints()
 	{
-		$sql = '';
+		// Let the parent do their bit first
+		parent::_compile_constraints();
 		
 		// If the field is set to auto_increment, then set it.
 		if($this->is_auto_increment)
 		{
-			$sql .= 'AUTO_INCREMENT ';
+			$constraints[] = 'auto_increment';
 		}
-		
-		// Add the rest of the constraints after.
-		$sql .= parent::compile_constraints();
-		
-		// Return the SQL
-		return $sql;
+	}
+	
+	protected function _compile_parameters()
+	{
+		// FLOAT(SCALE, PRECISION)
+		return array(
+			$this->scale,
+		);
 	}
 }

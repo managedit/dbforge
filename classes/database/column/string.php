@@ -8,44 +8,39 @@
  * @copyright	(c) 2009 Oliver Morgan
  * @license		MIT
  */
-class Database_Table_Column_String extends Database_Column {
-	
-	/*
-	 * Not editable
-	 */
-	
-	// The character set
-	public $character_set;
-	
-	// The collation name
-	public $collation_name;
-	
-	// The maximum length number of assigned bytes
+class Database_Column_String extends Database_Column {
+
+	// The maximum number of characters
 	public $maximum_length;
-	
-	// Octet length
-	public $octet_length;
 	
 	// Is exact
 	public $is_exact;
 	
-	public function __construct( & $table, $datatype)
+	// Is the column a binary datatype or not
+	public $is_binary;
+	
+	protected function _load_schema($information_schema)
 	{
-		// Set if its exact or not.
-		$this->is_exact = arr::get($datatype, 'exact', FALSE);
+		// Set whether the string column is exact or not
+		$this->is_exact = arr::get($information_schema, 'exact', FALSE);
 		
-		parent::__construct($table, $datatype);
+		// Set string specific properties
+		$this->maximum_length = arr::get($information_schema, 'character_maximum_length');
+		
+		// Set whether the column is a binary type or not
+		$this->is_binary = arr::get($information_schema, 'binary', FALSE);
 	}
 	
-	public function load_schema( & $table, $schema)
+	protected function _compile_constraints()
 	{
-		// Set string specific properties
-		$this->character_set = $schema['CHARACTER_SET_NAME'];
-		$this->collation_name = $schema['COLLATION_NAME'];
-		$this->maximum_length = $schema['CHARACTER_MAXIMUM_LENGTH'];
-		$this->octet_length = $schema['CHARACTER_OCTET_LENGTH'];
+		// Let the parent do their stuff first
+		parent::_compile_constraints();
 		
-		// Let the parent method do the rest
-		parent::load_schema($table, $schema);
+		// If the string is a binary type
+		if($this->is_binary)
+		{
+			// Add the binary keyword as a constraint
+			$constraints[] = 'binary';
+		}
 	}
 }
