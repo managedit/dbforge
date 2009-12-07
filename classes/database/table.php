@@ -336,7 +336,7 @@ class Database_Table {
 		foreach($columns as $name => & $column)
 		{
 			// Compile the column and set it
-			$column = $column->compile($this->database);
+			$column = $column->compile();
 		}
 		
 		// Return the column array

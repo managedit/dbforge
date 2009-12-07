@@ -44,18 +44,21 @@ class Database_Column_Int extends Database_Column {
 	protected function _compile_constraints()
 	{
 		// Let the parent do their bit first
-		parent::_compile_constraints();
+		$constraints = parent::_compile_constraints();
 		
 		// If the field is set to auto_increment, then set it.
 		if($this->is_auto_increment)
 		{
 			$constraints[] = 'auto_increment';
 		}
+		
+		// Finally return the constraints
+		return $constraints;
 	}
 	
 	protected function _compile_parameters()
 	{
-		// FLOAT(SCALE, PRECISION)
+		// INT(SCALE)
 		return array(
 			$this->scale,
 		);

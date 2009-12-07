@@ -172,7 +172,7 @@ abstract class Database_Query_Builder extends Kohana_Database_Query_Builder {
 		
 		// Compile the datatype
 		$sql .= self::compile_method($column['datatype'], array($db, 'quote')).' ';
-		
+
 		// Compile the column constraints
 		foreach($column['constraints'] as $name => $data)
 		{

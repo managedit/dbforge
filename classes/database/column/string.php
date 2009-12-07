@@ -34,13 +34,9 @@ class Database_Column_String extends Database_Column {
 	protected function _compile_constraints()
 	{
 		// Let the parent do their stuff first
-		parent::_compile_constraints();
+		$constraints = parent::_compile_constraints();
 		
-		// If the string is a binary type
-		if($this->is_binary)
-		{
-			// Add the binary keyword as a constraint
-			$constraints[] = 'binary';
-		}
+		// Return the constraints
+		return $constraints;
 	}
 }
