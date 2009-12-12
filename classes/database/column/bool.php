@@ -8,4 +8,8 @@
  * @copyright	(c) 2009 Oliver Morgan
  * @license		MIT
  */
-class Database_Column_Bool extends Database_Column { }
+class Database_Column_Bool extends Database_Column {
+
+	protected function _load_schema($schema) { }
+	
+}

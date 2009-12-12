@@ -57,8 +57,21 @@ abstract class Database_Constraint {
 	 */
 	public static function check($identifier, $operator, $value, $name = NULL)
 	{
-		return new Database_Constraint_Check($identifier, $operator, $value);
+		return new Database_Constraint_Check($identifier, $operator, $value, $name);
 	}
+	
+	/**
+	 * @var Name of the key.
+	 */
+	public $name;
+	
+	/**
+	 * @var	Database_Table	The table object.
+	 */
+	public $table;
+	
+	// Whether the constraint is loaded or not.
+	protected $_loaded;
 	
 	/**
 	 * Compiles the constraint into a DBForge constraint array.
@@ -68,4 +81,91 @@ abstract class Database_Constraint {
 	 */
 	abstract public function compile( Database $db);
 	
+	/**
+	 * Drops the constraint from the table.
+	 *
+	 * @return	void
+	 */
+	public function drop()
+	{
+		// If the constraint is loaded, attempt to remove it
+		if($this->loaded())
+		{
+			// This is a nasty hard coded hack, because MySQL doesnt follow SQL-92
+			switch(str_replace('Database_', '', get_class($this->table->database)))
+			{
+				case 'MySQL':
+				{
+					switch(str_replace('Database_Constraint_', '', get_class($this)))
+					{
+						case 'Check':
+							break; // Do nothing, MySQL doesnt support dropping check constraints
+							
+						case 'Foreign':
+						case 'Unique':
+						{
+							// MySQL calls foreign and unique constraints "indexes"
+							DB::alter($this->table->name)
+								->drop($this->name, 'index')
+								->execute($this->table->database);
+							break;
+						}
+							
+						case 'Primary':
+						{
+							// There can only be one primary key, so no identifier is needed
+							DB::alter($this->table->name)
+								->drop(NULL, 'PRIMARY KEY')
+								->execute($this->table->database);
+							break;	
+						}	
+					}
+					break;
+				}
+				default:
+				{
+					// All normal databases call constraints "constraints".
+					DB::alter($this->table->name)
+						->drop($this->name, 'constraint')
+						->execute($this->table->database);
+					break;
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Drops the constraint from the table.
+	 *
+	 * @return	void
+	 */
+	public function create()
+	{
+		$this->table->add_constraint($this);
+	}
+	
+	/**
+	 * Updates a constraint object
+	 *
+	 * @return	void
+	 */
+	public function update()
+	{
+		// First drop the constraint
+		$this->drop();
+		
+		// Then re-create it/
+		$this->create();
+	}
+	
+	/**
+	 * Whether the constraint is loaded or not.
+	 *
+	 * @return	bool
+	 */
+	public function loaded()
+	{
+		// If either we have loaded set to true
+		return $this->_loaded;
+	}
 }

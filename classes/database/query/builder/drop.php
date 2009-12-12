@@ -41,25 +41,21 @@ class Database_Query_Builder_Drop extends Database_Query_Builder {
 				return 'DROP TABLE '.$db->quote_table($this->_name);
 				
 			// A column to be dropped.
-			case 'column':
-				return 'DROP COLUMN '.$db->quote_identifier($this->_name);
-				
-			// A column to be dropped.
+			case 'column':	
 			case 'constraint':
-				return 'DROP CONSTRAINT '.$db->quote_identifier($this->_name);
+			case 'index':
+				return 'DROP '.strtoupper($this->_drop_type).' '.$db->quote_identifier($this->_name);
 				
 			// Something we did not recognise.
 			default:
-				throw new Database_Exception('Invalid drop type :typ', array(
-					'typ' => $this->_type
-				));
+				return 'DROP '.strtoupper($this->_drop_type).' '.$this->_name;
 		}
 	}
 	
 	public function reset()
 	{
 		// Reset objects.
-		$this->_type =
+		$this->_drop_type =
 		$this->_name = NULL;
 	}
 	

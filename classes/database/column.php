@@ -10,14 +10,6 @@
  */
 abstract class Database_Column {
 	
-	// Lets define some default column datatypes
-	const STRING 	= 'varchar';
-	const BINARY 	= 'blob';
-	const BOOL	 	= 'boolean';
-	const DATETIME 	= 'timestamp';
-	const FLOAT		= 'float';
-	const INT		= 'int';
-	
 	/**
 	 * Creates a new database column with the specified datatype.
 	 *
@@ -25,7 +17,7 @@ abstract class Database_Column {
 	 * @param   string	The datatype of the column.
 	 * @return  Database_Column	Database column object.
 	 */
-	public static function factory($table, $datatype)
+	public static function factory($table, $datatype, $name)
 	{
 		// Get the normalised datatype
 		$schema = $table->database->datatype($datatype);
@@ -37,7 +29,14 @@ abstract class Database_Column {
 		// If the class exists return it.
 		if(class_exists($class))
 		{
-			return new $class($table, $schema);
+			// Create the new object
+			$col = new $class($table, $schema);
+			
+			// Set its name
+			$col->name = $name;
+			
+			// Return the column
+			return $col;
 		}
 		
 		// Otherwise throw an error, we don't support the column type.
@@ -53,11 +52,10 @@ abstract class Database_Column {
 	 * @param	string	The name of the column.
 	 * @return  object	Database column object.
 	 */
-	public static function instance($table, $name)
+	public static function instance( Database_Table $table, $name)
 	{
 		// Get the column's information schema
-		$schema = $table->columns($name);
-		
+		$schema = current($table->database->list_columns($table->name, $name));
 		// Get the appropriate type
 		$class = 'Database_Column_'.ucfirst($schema['type']);
 		
@@ -73,38 +71,49 @@ abstract class Database_Column {
 		));
 	}
 	
-	// The name of the column
+	/**
+	 * @var	string	The column's name.
+	 */
 	public $name;
 	
-	// The column's default value
+	/**
+	 * @var	The default value of the column.
+	 */
 	public $default;
 	
-	// Whether the column is nullable or not
+	/**
+	 * @var bool	Whether the column is nullable or not.
+	 */
 	public $is_nullable;
 	
-	// Whether the column is a primary key
-	public $is_primary;
-	
-	// The normalised datatype of the column
+	/**
+	 * @var	string	The column's datatype.
+	 */
 	public $datatype;
 	
-	// Any additional parameters that were not identified
+	/**
+	 * @var	array	The list of parameters used within the datatype
+	 * @example ENUM('foo','bar','baz'); will have the parameters:
+	 * array(
+	 * 	'foo',
+	 * 	'bar',
+	 * 	'baz
+	 * );
+	 */
 	public $parameters;
-	
-	// Whether the column is a unique key or not
-	public $is_unique;
 
-	// The ordinal position of the column
+	/**
+	 * @var	int	The ordinal position of the column.
+	 */
 	public $ordinal_position;
 	
-	// The parent table object
+	/**
+	 * @var	Database_Table	The parent table object.
+	 */
 	public $table;
 	
 	// Whether the column has been loaded from the database or not.
 	protected $_loaded = FALSE;
-	
-	// The original name of the column.
-	protected $_original_name;
 	
 	/**
 	 * Create a new column object.
@@ -122,13 +131,11 @@ abstract class Database_Column {
 		if($information_schema !== NULL)
 		{
 			// Set the original name and current name to the same thing
-			$this->_original_name = $this->name = arr::get($information_schema, 'column_name');
+			$this->name = arr::get($information_schema, 'column_name');
 			
 			// Set some ISO standard params
 			$this->default 			= arr::get($information_schema, 'column_default');
 			$this->is_nullable 		= arr::get($information_schema, 'is_nullable')	== 'YES';
-			$this->is_primary 		= arr::get($information_schema, 'column_key')	== 'PRI';
-			$this->is_unique 		= arr::get($information_schema, 'column_key')	== 'UNI';
 			$this->ordinal_position = arr::get($information_schema, 'ordinal_position');
 			
 			// Normalise and set the datatype and any parameters
@@ -208,7 +215,7 @@ abstract class Database_Column {
 	 * 
 	 * @return	void
 	 */
-	public function update()
+	public function modify()
 	{
 		if( ! $this->loaded())
 		{
@@ -218,8 +225,8 @@ abstract class Database_Column {
 		}
 		
 		// Updates the existing column
-		DB::alter($this->table)
-			->modify($this->compile(), $this->_original_name)
+		DB::alter($this->table->name)
+			->modify($this->compile())
 			->execute($this->table->database);
 	}
 	
@@ -230,33 +237,15 @@ abstract class Database_Column {
 	 */
 	public function compile()
 	{
+		// We assume that if the column is compiled, its loaded.
+		$this->_loaded = TRUE;
+		
 		// Bring everything together and return the array
 		return array(
 			'name' => $this->name,
 			'datatype' => array($this->datatype => $this->_compile_parameters()),
 			'constraints' => $this->_compile_constraints()
 		);
-	}
-	
-	/**
-	 * Renames the column.
-	 * 
-	 * @return	void
-	 */
-	public function rename($new_name)
-	{
-		// If the column isn't loaded then it can't be renamed
-		if( ! $this->loaded())
-		{
-			throw new Kohana_Exception('Unable to rename unloaded column :col', array(
-				'col'	=> $this->name
-			));
-		}
-		
-		// Perform the query
-		DB::alter($this->table->name)
-			->rename_column($this->name, $new_name)
-			->execute($this->table->database);
 	}
 	
 	/**
@@ -287,9 +276,9 @@ abstract class Database_Column {
 		}
 		
 		// Compile the default constraint
-		if(isset($this->default))
+		if(isset($this->default) AND ( ! is_null($this->default) AND $this->default != ''))
 		{
-			$constraints['default'] = $this->default;
+			$constraints['default'] = $this->table->database->quote($this->default);
 		}
 		
 		// Return the constraints array

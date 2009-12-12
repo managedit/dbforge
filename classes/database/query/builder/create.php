@@ -35,13 +35,13 @@ class Database_Query_Builder_Create extends Database_Query_Builder {
 			// Compile the columns in the normal way.
 			foreach($this->_table['columns'] as $name => $data)
 			{
-				$sql .= Database_Query_Builder::compile_column($db, $data).',';
+				$sql .= Database_Query_Builder::compile_column($data, $db).',';
 			}
 			
 			// Compile constraints in a normal way
 			foreach($this->_table['constraints'] as $name => $data)
 			{
-				$sql .= Database_Query_Builder::compile_constraint($db, $data).',';
+				$sql .= Database_Query_Builder::compile_constraint($data, $db).',';
 			}
 			
 			// Seperate the columns with commars, and add the table constraints at the end.

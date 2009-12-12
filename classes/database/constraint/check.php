@@ -10,18 +10,27 @@
  */
 class Database_Constraint_Check extends Database_Constraint {
 	
-	// The key name
-	protected $_name;
-	
 	// The checks array
 	protected $_checks = array();
 	
+	// The type of the constraint.
+	protected $_type = 'check';
+	
+	/**
+	 * Initiate a CHECK constraint.
+	 *
+	 * @param	string	The name of the column that's being checked.
+	 * @param	string	The operator used in the conditional statement.
+	 * @param	string	The value to compare it with.
+	 * @param	string	The name of the key, if this is not set, one will generated for you.
+	 * @return	Database_Constraint_Check	The constraint object.
+	 */
 	public function __construct($identifier, $operator, $value, $name = NULL)
 	{
 		// Set the name/key of the check
 		if($name !== NULL)
 		{
-			$this->_name = $name;
+			$this->name = $name;
 		}
 		
 		// Add the initial check to the array
@@ -128,7 +137,10 @@ class Database_Constraint_Check extends Database_Constraint {
 		}
 		
 		// Set the name to either the user set name, or the one we generated.
-		$result['name'] = isset($this->_name) ? $this->_name : $name;
+		$this->name = $result['name'] = isset($this->name) ? $this->name : $name;
+		
+		// We assume that the constraint is created when it is compiled.
+		$this->_loaded = TRUE;
 		
 		// Returns the result.
 		return $result;

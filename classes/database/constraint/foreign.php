@@ -10,6 +10,20 @@
  */
 class Database_Constraint_Foreign extends Database_Constraint {
 	
+	/**
+	 * @var	array	The list of supported actions.
+	 */
+	public $actions = array(
+		'cascade'		=> 'cascade',
+		'restrict'		=> 'restrict',
+		'no action'		=> 'no action',
+		'set null'		=> 'set null',
+		'set default' 	=> 'set default'
+	);
+	
+	// The type of the constraint.
+	protected $_type = 'foreign key';
+	
 	// What the constraint references
 	protected $_references;
 	
@@ -19,27 +33,22 @@ class Database_Constraint_Foreign extends Database_Constraint {
 	// The action taken on delete
 	protected $_on_delete = 'no action';
 	
-	// The column in question.
+	// The name of the foreign key column
 	protected $_column;
 	
-	// The name of the constraint.
-	protected $_name;
-	
-	// A list of supported actions
-	protected $_actions = array(
-		'cascade',
-		'restrict',
-		'no action',
-		'set null',
-		'set default'
-	);
-	
+	/**
+	 * Initiate a FOREIGN KEY constraint.
+	 *
+	 * @param	string	The name of the column that represents the foreign key.
+	 * @param	string	The name of the key, if this is not set, one will generated for you.
+	 * @return	Database_Constraint_Foreign	The constraint object.
+	 */
 	public function __construct($column, $name = NULL)
 	{
 		// If the name is not given, dont set it
 		if($name !== NULL)
 		{
-			$this->_name = $name;
+			$this->name = $name;
 		}
 		
 		// Set the column name we're working with
@@ -77,15 +86,15 @@ class Database_Constraint_Foreign extends Database_Constraint {
 	public function on_update($type)
 	{
 		// If the type is recognised, use it
-		if (in_array($type, $this->_actions, FALSE))
+		if (in_array($type, $this->actions, FALSE))
 		{
 			$this->_on_update = $type;
 		}
 		else
 		{
 			// Otherwise throw an error
-			throw new Kohana_Exception('The foreign key constraint action act was not recognised', array(
-				'act'	=> $type
+			throw new Kohana_Exception('The foreign key constraint action [0] was not recognised', array(
+				'[0]'	=> $type
 			));
 		}
 		
@@ -105,15 +114,15 @@ class Database_Constraint_Foreign extends Database_Constraint {
 	public function on_delete($type)
 	{
 		// If the action is recognised, set it
-		if (in_array($type, $this->_actions, FALSE))
+		if (in_array($type, $this->actions, FALSE))
 		{
 			$this->_on_delete = $type;
 		}
 		else
 		{
 			// Otherwise throw an exception
-			throw new Kohana_Exception('The foreign key constraint action act was not recognised', array(
-				'act'	=> $type
+			throw new Kohana_Exception('The foreign key constraint action [0] was not recognised', array(
+				'[0]'	=> $type
 			));
 		}
 		
@@ -127,14 +136,14 @@ class Database_Constraint_Foreign extends Database_Constraint {
 		list($table, $column) = $this->_references;
 		
 		// If the bastards haven't set a name, we'll make one up.
-		if( ! isset($this->_name))
+		if( ! isset($this->name))
 		{
-			$this->_name = 'fk_'.$this->_column.'_'.$table.'_'.$column;
+			$this->name = 'fk_'.$this->_column.'_'.$table.'_'.$column;
 		}
 		
 		// Compile a default array supported by the DBForge compiler.
 		$result = array(
-			'name'	=> $this->_name,
+			'name'	=> $this->name,
 			'params' => array(
 				'foreign key' => array(
 					$db->quote_identifier($this->_column)
@@ -156,6 +165,9 @@ class Database_Constraint_Foreign extends Database_Constraint {
 		{
 			$result['params'][] = 'on delete '.$this->_on_delete;
 		}
+		
+		// We assume that the constraint is created when it is compiled.
+		$this->_loaded = TRUE;
 		
 		// Finally return our array.
 		return $result;

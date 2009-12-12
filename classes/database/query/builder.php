@@ -65,7 +65,7 @@ abstract class Database_Query_Builder extends Kohana_Database_Query_Builder {
 	 * @param   array   The callback to perform to perform on all values.
 	 * @return  string	The SQL Syntax.
 	 */
-	public static function compile_method($data, array $value_callback = NULL)
+	public static function compile_method($data, $callback = NULL, array $callback_userdata = array())
 	{
 		// If we have an array we may be dealing with params
 		if (is_array($data))
@@ -83,8 +83,8 @@ abstract class Database_Query_Builder extends Kohana_Database_Query_Builder {
 				$value = reset($data);
 				$key   = strtoupper(key($data));
 				
-				// If the value is null
-				if(is_null($value) OR (is_array($value) AND is_null(reset($value))))
+				// If the value is null or not set
+				if( ! $value OR (is_array($value) AND ! reset($value)))
 				{
 					// Return just the key
 					return strtoupper($key);
@@ -94,21 +94,23 @@ abstract class Database_Query_Builder extends Kohana_Database_Query_Builder {
 				if (is_array($value))
 				{
 					// Check if we've been given a callback
-					if ($value_callback !== NULL)
+					if ($callback !== NULL)
 					{
-						// If we have, apply it to every item in the array and implode
-						$value = implode(',', array_map($value_callback, $value));
+						// Loop through each item
+						foreach($value as & $item)
+						{
+							// Apply the callback to the item
+							$item = call_user_func_array($callback, array_merge(array($item), $callback_userdata));
+						}
 					}
-					else
-					{
-						// Otherwise just implode
-						$value = implode(',', $value);
-					}
+
+					// Finally, impode the parameters
+					$value = implode(',', $value);
 				}
-				elseif ($value_callback !== NULL)
+				elseif ($callback !== NULL)
 				{
 					// If we dont have an array but do have a value callback, use it on the value
-					$value = call_user_func($value_callback, $value);
+					$value = call_user_func_array($callback, array_merge(array($value), $callback_userdata));
 				}
 				
 				// Return the method with brackets around the parameters
@@ -135,11 +137,11 @@ abstract class Database_Query_Builder extends Kohana_Database_Query_Builder {
 	 * @param   array   The constraint array.
 	 * @return  string	The SQL syntax.
 	 */
-	public static function compile_constraint( Database $db, array $constraint, $escape = TRUE)
+	public static function compile_constraint( array $constraint, Database $db, $escape = TRUE)
 	{
 		// Extract the constraint name and any available parameters
-		$name = reset($constraint);
-		$params = next($constraint);
+		$name = $constraint['name'];
+		$params = $constraint['params'];
 		
 		// Begin the constraint
 		$sql = 'CONSTRAINT '.$db->quote_identifier($name).' ';
@@ -165,7 +167,7 @@ abstract class Database_Query_Builder extends Kohana_Database_Query_Builder {
 	 * @param   array   The column array.
 	 * @return  string	The SQL syntax.
 	 */
-	public static function compile_column( Database $db, array $column)
+	public static function compile_column( array $column, Database $db)
 	{		
 		// Start with the column name
 		$sql = $db->quote_identifier($column['name']).' ';
@@ -179,8 +181,7 @@ abstract class Database_Query_Builder extends Kohana_Database_Query_Builder {
 			// Use the compile statement method to compile the statement
 			$sql .= Database_Query_Builder::compile_statement(
 				array($name => $data),
-				' ',
-				array($db, 'quote')
+				' '
 			).' ';
 		}
 		

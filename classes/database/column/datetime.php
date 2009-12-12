@@ -18,4 +18,21 @@ class Database_Column_Datetime extends Database_Column {
 	{
 		$this->format = arr::get($information_schema, 'format');
 	}
+	
+	protected function _compile_constraints()
+	{
+		// Let the parent process the constraints first.
+		parent::_compile_constraints();
+		
+		// Defaults given for datetimes 
+		if(isset($this->default))
+		{
+			// If the default is a valid date format, then quote it, otherwise leave it as is
+			$constraints['default'] = strtotime($this->default) ?
+				$this->table->database->quote($this->default) :
+				$this->default;
+		}
+		
+		return $constraints;
+	}
 }

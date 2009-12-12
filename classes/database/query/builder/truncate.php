@@ -18,7 +18,7 @@ class Database_Query_Builder_Truncate extends Database_Query_Builder {
 		$this->_table = $table;
 		
 		// Because mummy says so.
-		parent::__construct(Database::DROP, '');
+		parent::__construct(Database::TRUNCATE, '');
 	}
 	
 	public function compile( Database $db)

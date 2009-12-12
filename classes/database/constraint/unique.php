@@ -10,18 +10,25 @@
  */
 class Database_Constraint_Unique extends Database_Constraint {
 	
-	// The name of the column thats going to be unique
+	// The type of the constraint.
+	protected $_type = 'index';
+	
+	// The name of the column thats being indexed
 	protected $_key;
-	
-	// The name of the unique key
-	protected $_name;
-	
+
+	/**
+	 * Initiate a UNIQUE constraint.
+	 *
+	 * @param	string	The name of the column thats unique.
+	 * @param	string	The name of the key, if this is not set, one will generated for you.
+	 * @return	Database_Constraint_Unique	The constraint object.
+	 */
 	public function __construct($key, $name = NULL)
 	{
 		// If the name is not given, dont set it
 		if($name !== NULL)
 		{
-			$this->_name = $name;
+			$this->name = $name;
 		}
 		
 		// Set the key/column value
@@ -31,14 +38,17 @@ class Database_Constraint_Unique extends Database_Constraint {
 	public function compile( Database $db)
 	{
 		// If the asshole hasnt given us a name, we'll generate one
-		if( ! isset($this->_name))
+		if( ! isset($this->name))
 		{
-			$this->_name = 'key_'.$this->_key;	
+			$this->name = 'key_'.$this->_key;	
 		}
+		
+		// We assume that the constraint is created when it is compiled.
+		$this->_loaded = TRUE;
 		
 		// Return the DBForge constraint array.
 		return array(
-			'name'		=> $this->_name,
+			'name'		=> $this->name,
 			'params'	=> array(
 				'unique' => $db->quote_identifier($this->_key)
 			)

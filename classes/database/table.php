@@ -15,7 +15,7 @@ class Database_Table {
 	 *
 	 * @param   string   The name of the table.
 	 * @param	Database	The database instance (optional).
-	 * @return  object	The table object.
+	 * @return  Database_Table	The table object.
 	 */
 	public static function instance($name, Database $database = NULL)
 	{
@@ -29,24 +29,28 @@ class Database_Table {
 		$table_schema = $database->list_tables($name);
 		
 		// Throw an exception if the schema could not be found
-		if(empty($table_schema))
+		if (empty($table_schema))
 		{
-			throw new Kohana_Exception('Unable to find table tbl', array(
-				'tbl' => $name
-			));
+			return FALSE;
 		}
 		
 		// Return a new table object with everything we need.
 		return new self($database, $table_schema);
 	}
 	
-	// The parent database
+	/**
+	 * @var	Database	The table's parent database.
+	 */
 	public $database;
 	
-	// The name of the table
+	/**
+	 * @var	string	The name of the table.
+	 */
 	public $name;
 	
-	// The type of the table
+	/**
+	 * @var	string	The table's type. Typically BASE_TABLE.
+	 */
 	public $type;
 	
 	// Whether the table is loaded or not
@@ -88,9 +92,15 @@ class Database_Table {
 		// Load the information schema if its added
 		if($information_schema !== NULL)
 		{
-			// These properties are supported by ISO standards
-			$this->name = $information_schema['table_name'];
-			$this->type = $information_schema['table_type'];
+			// Get the name from the schema
+			$this->name = reset($information_schema);
+			
+			// Load the table's columns into an array
+			foreach($this->database->list_columns($this->name) as $name => $schema)
+			{
+				// Add it as an instance
+				$this->_columns[$name] = Database_Column::instance($this, $name);
+			}
 			
 			// Identify the object as loaded from live table data.
 			$this->_loaded = TRUE;
@@ -152,9 +162,9 @@ class Database_Table {
 		// If this table is loaded, add the column to the database.
 		if($this->_loaded)
 		{
-			DB::alter($this)
-				->add($column)
-				->execute($this->_database);
+			DB::alter($this->name)
+				->add($column->compile())
+				->execute($this->database);
 		}
 		
 		// And just add it to the list of columns.
@@ -171,6 +181,9 @@ class Database_Table {
 		// Drop the table
 		DB::drop('table', $this->name)
 			->execute($this->database);
+			
+		// The table unloads when it is dropped.
+		$this->_loaded = FALSE;
 	}
 	
 	/**
@@ -183,6 +196,9 @@ class Database_Table {
 		// Create this table
 		DB::create($this->compile())
 			->execute($this->database);
+			
+		// Once the table is created, we can count it as loaded.
+		$this->_loaded = TRUE;
 	}
 	
 	/**
@@ -204,18 +220,6 @@ class Database_Table {
 			->execute($this->_database);
 			
 		$this->name = $new_name;
-	}
-	
-	/**
-	 * Adds a constraint to the table.
-	 *
-	 * @param	Database_Constraint	The constraint object.
-	 * @return  void.
-	 */
-	public function add_constraint(Database_Constraint $constraint)
-	{
-		// Add it to the array
-		$this->_constraints[] = $constraint;
 	}
 	
 	/**
@@ -266,24 +270,31 @@ class Database_Table {
 	}
 	
 	/**
+	 * Lists all constraints associated with the table.
+	 *
+	 * @return  array	The list of all the columns
+	 */
+	public function constraints()
+	{
+		// Return them all
+		return $this->_constraints;
+	}
+	
+	/**
 	 * Adds a constraint to the table.
 	 *
-	 * @param	string	The name of the constraint you're looking for
-	 * @return  array	The list of all the columns
-	 * @return	Database_Constraint The constraint object
+	 * @param	string	The key identifier of the constraint, use this to locate the constraint in future using
+	 * the constraints($like) method.
+	 * @param	Database_Constraint	The constraint object.
+	 * @return  void.
 	 */
-	public function constraints($like = NULL)
+	public function add_constraint( Database_Constraint $constraint)
 	{
-		// If we have nothing to find, then return them all
-		if ($like === NULL)
-		{
-			return $this->_constraints;
-		}
-		else
-		{
-			// Otherwise return what they are looking for
-			return $this->_constraints[$like];
-		}
+		// Add it to the array
+		$this->_constraints[] = $constraint;
+		
+		// Set the table as the current object
+		$constraint->table = $this;
 	}
 	
 	public function reset()
@@ -312,6 +323,11 @@ class Database_Table {
 		);
 	}
 	
+	/**
+	 * Compiles all thr constraints within the table.
+	 *
+	 * @return  array
+	 */
 	protected function _compile_constraints()
 	{
 		// Get a list of constraints
@@ -327,6 +343,11 @@ class Database_Table {
 		return $constraints;
 	}
 	
+	/**
+	 * Compiles all the columns in the table.
+	 *
+	 * @return  array
+	 */
 	protected function _compile_columns()
 	{
 		// Get a list of columns
@@ -350,5 +371,14 @@ class Database_Table {
 	{
 		// Cloned tables dont exist in the database.
 		$this->_loaded = false;
+	}
+	
+	/**
+	 * When casted as a string, return the table's name.
+	 */
+	public function __toString()
+	{
+		// Return the name of the table
+		return $this->name;
 	}
 }

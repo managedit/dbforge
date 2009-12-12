@@ -10,18 +10,18 @@
  */
 class Database_Constraint_Primary extends Database_Constraint {
 	
+	// The type of the constraint.
+	protected $_type = 'primary key';
+	
 	// The keys that make up the primary key
 	protected $_keys;
-	
-	// The name of the constrint
-	protected $_name;
 	
 	public function __construct( array $keys, $name = NULL)
 	{
 		// If the name isnt given, dont set it, we'll have to make it up later
 		if($name !== NULL)
 		{
-			$this->_name = $name;
+			$this->name = $name;
 		}
 		
 		// Set the keys
@@ -31,14 +31,17 @@ class Database_Constraint_Primary extends Database_Constraint {
 	public function compile( Database $db)
 	{
 		// If we dont have a name, generate one.
-		if( ! isset($this->_name))
+		if( ! isset($this->name))
 		{
-			$this->_name = 'pk_'.implode('_', $this->_keys);	
+			$this->name = 'pk_'.implode('_', $this->_keys);	
 		}
+		
+		// We assume that the constraint is created when it is compiled.
+		$this->_loaded = TRUE;
 		
 		// Finally return the beautiful array.
 		return array(
-			'name'		=> $this->_name,
+			'name'		=> $this->name,
 			'params'	=> array(
 				'primary key' => array_map(array($db, 'quote_identifier'), $this->_keys)
 			)
