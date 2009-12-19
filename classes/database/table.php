@@ -152,23 +152,30 @@ class Database_Table {
 	/**
 	 * Adds a column to the table. If the table is loaded then the action will be commited to the database.
 	 *
+	 * @param	Database_Column|array	A list of columns or a single column object.
 	 * @return  void.
 	 */
-	public function add_column( Database_Column $column)
+	public function add_column($column)
 	{
-		// Set the column table by reference.
-		$column->table = $this;
+		// Normalise the two possible input data types to be an array
+		$column = is_array($column) ? $column : array($column);
 		
-		// If this table is loaded, add the column to the database.
-		if($this->_loaded)
+		foreach($column as $col)
 		{
-			DB::alter($this->name)
-				->add($column->compile())
-				->execute($this->database);
+			// Set the column table by reference.
+			$col->table = $this;
+			
+			// If this table is loaded, add the column to the database.
+			if($this->_loaded)
+			{
+				DB::alter($this->name)
+					->add($col->compile())
+					->execute($this->database);
+			}
+			
+			// And just add it to the list of columns.
+			$this->_columns[] = $col;
 		}
-		
-		// And just add it to the list of columns.
-		$this->_columns[] = $column;
 	}
 	
 	/**
