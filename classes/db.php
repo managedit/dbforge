@@ -13,7 +13,7 @@ class DB extends Kohana_DB {
 	 * Create a new alter table query.
 	 *
 	 * @param   string   The name of the table to alter.
-	 * @return  Database_Query_Alter
+	 * @return  Database_Query_Builder_Alter
 	 */
 	public static function alter($table)
 	{
@@ -24,7 +24,7 @@ class DB extends Kohana_DB {
 	 * Create a new create table query.
 	 *
 	 * @param   array   The table array to create.
-	 * @return  Database_Query_Create
+	 * @return  Database_Query_Builder_Create
 	 */
 	public static function create( array $table)
 	{
@@ -36,7 +36,7 @@ class DB extends Kohana_DB {
 	 *
 	 * @param   string	 The type of object to drop; 'database', 'table', 'column' or 'constraint.
 	 * @param   string   The name of the object to drop.
-	 * @return  Database_Query_Drop
+	 * @return  Database_Query_Builder_Drop
 	 */
 	public static function drop($type, $object)
 	{
@@ -47,7 +47,7 @@ class DB extends Kohana_DB {
 	 * Creates a new table truncate query.
 	 *
 	 * @param   string   The table name to truncate.
-	 * @return  Database_Query_Truncate
+	 * @return  Database_Query_Builder_Truncate
 	 */
 	public static function truncate($table)
 	{

@@ -174,7 +174,7 @@ class Database_Table {
 			}
 			
 			// And just add it to the list of columns.
-			$this->_columns[] = $col;
+			$this->_columns[$col->name] = $col;
 		}
 	}
 	
