@@ -1,42 +1,68 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php defined('SYSPATH') OR die('No direct access allowed.');
 /**
- * Database table string column.
+ * Database string column object.
  *
  * @package		DBForge
  * @author		Oliver Morgan
- * @uses		Kohana 3.0 Database
+ * @uses		Database
  * @copyright	(c) 2009 Oliver Morgan
  * @license		MIT
  */
 class Database_Column_String extends Database_Column {
-
-	// The maximum number of characters
-	public $maximum_length;
 	
-	// Is exact
-	public $is_exact;
+	/**
+	 * The maximum length of the column in bytes.
+	 * 
+	 * @var	int
+	 */
+	public $max_length;
 	
-	// Is the column a binary datatype or not
-	public $is_binary;
+	/**
+	 * Whether the column is fixed in length.
+	 * 
+	 * @var	bool
+	 */
+	public $exact;
 	
-	protected function _load_schema($information_schema)
+	/**
+	 * Whether the column is colated to store binary data.
+	 * 
+	 * @var	bool
+	 */
+	public $binary;
+	
+	public function parameters($set = NULL)
 	{
-		// Set whether the string column is exact or not
-		$this->is_exact = arr::get($information_schema, 'exact', FALSE);
-		
-		// Set string specific properties
-		$this->maximum_length = arr::get($information_schema, 'character_maximum_length');
-		
-		// Set whether the column is a binary type or not
-		$this->is_binary = arr::get($information_schema, 'binary', FALSE);
+		if ($this->exact)
+		{
+			return NULL;
+		}
+		else
+		{
+			if ($set === NULL)
+			{
+				return array($this->max_length);
+			}
+			else
+			{
+				$this->max_length = $set;
+			}
+		}
 	}
 	
-	protected function _compile_constraints()
+	protected function _load_schema(array $schema)
 	{
-		// Let the parent do their stuff first
-		$constraints = parent::_compile_constraints();
-		
-		// Return the constraints
-		return $constraints;
+		$this->max_length = arr::get($schema, 'character_maximum_length');
+		$this->binary = arr::get($schema, 'binary', FALSE);
+		$this->exact = arr::get($schema, 'exact', FALSE);
 	}
-}
+	
+	protected function _constraints()
+	{
+		if ($this->binary)
+		{
+			return array('binary');
+		}
+	}
+	
+} // End Database_Column_String

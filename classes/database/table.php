@@ -11,106 +11,107 @@
 class Database_Table {
 	
 	/**
-	 * Retrieves the instance of an existing database table.
-	 *
-	 * @param   string   The name of the table.
-	 * @param	Database	The database instance (optional).
-	 * @return  Database_Table	The table object.
+	 * Retrieves an existing instance of a table from the database. Returns NULL if no table is found.
+	 * 
+	 * @param	string	The name of the table.
+	 * @param	Database	The parent database object.
+	 * @return	Database_Table
 	 */
-	public static function instance($name, Database $database = NULL)
+	public static function instance($name, Database $db = NULL)
 	{
-		// Get a default instance of the database if none is set.
-		if($database === NULL)
+		if ($db === NULL)
 		{
-			$database = Database::instance();
+			$db = Database::instance();
 		}
 		
-		// Get the table schema for the given name
-		$table_schema = $database->list_tables($name);
+		$schema = $db->list_tables($name);
 		
-		// Throw an exception if the schema could not be found
-		if (empty($table_schema))
+		if ( ! empty($schema))
 		{
-			return FALSE;
+			return new self($name, $db, $schema);
 		}
 		
-		// Return a new table object with everything we need.
-		return new self($database, $table_schema);
+		return NULL;
 	}
 	
 	/**
-	 * @var	Database	The table's parent database.
+	 * Creates a new instance of a database table.
+	 * 
+	 * @param	string	The name of the table.
+	 * @param	Database	The parent database object.
+	 * @return	Database_Table
 	 */
-	public $database;
+	public static function factory($name, Database $db = NULL)
+	{
+		if ($db === NULL)
+		{
+			$db = Database::instance();
+		}
+		
+		return new self($name, $db);
+	}
 	
 	/**
-	 * @var	string	The name of the table.
+	 * The name of the table.
+	 * 
+	 * @var string
 	 */
 	public $name;
 	
 	/**
-	 * @var	string	The table's type. Typically BASE_TABLE.
+	 * The list of columns.
+	 * 
+	 * @var	array
 	 */
-	public $type;
+	protected $_columns;
 	
-	// Whether the table is loaded or not
-	protected $_loaded = FALSE;
+	/**
+	 * The list of options.
+	 * 
+	 * @var	array
+	 */
+	protected $_options;
 	
-	// The list of primary keys
-	protected $_primary_keys = array();
+	/**
+	 * The list of constraints.
+	 * 
+	 * @var	array
+	 */
+	protected $_constraints;
 	
-	// The list of unique keys
-	protected $_unique_keys = array();
+	/**
+	 * Whether the table is loaded or not.
+	 * 
+	 * @var bool
+	 */
+	protected $_loaded;
 	
-	// The array of columns
-	protected $_columns = array();
-	
-	// The array of user defined constraints
-	protected $_constraints = array();
-	
-	// Table options used in compilation
-	protected $_options = array();
+	/**
+	 * The parent database object.
+	 * 
+	 * @var	Database
+	 */
+	protected $_db;
 	
 	/**
 	 * Creates a new table object.
 	 *
-	 * @param   Database   The parent database.
-	 * @param	array	The table schema.
-	 * @return  object	The table object.
+	 * @param   string   The name of the table.
+	 * @param	Database	The parent database object.
+	 * @param	array	The schema array if loaded from the database.
+	 * @return  void
 	 */
-	public function __construct(Database $database = NULL, $information_schema = NULL)
+	public function __construct($name, $db, array $schema = NULL)
 	{
-		// Load the current database instance by detault
-		if($database === NULL)
-		{
-			$database = Database::instance();
-		}
-		
-		// Set the parent database
-		$this->database = $database;
-		
-		// Load the information schema if its added
-		if($information_schema !== NULL)
-		{
-			// Get the name from the schema
-			$this->name = reset($information_schema);
-			
-			// Load the table's columns into an array
-			foreach($this->database->list_columns($this->name) as $name => $schema)
-			{
-				// Add it as an instance
-				$this->_columns[$name] = Database_Column::instance($this, $name);
-			}
-			
-			// Identify the object as loaded from live table data.
-			$this->_loaded = TRUE;
-		}
+		$this->_name = $name;
+		$this->_db = $db;
+		$this->_loaded = $schema !== NULL;
 	}
 	
 	/**
-	 * Returns whether the table has been loaded from the database.
+	 * Whether the table exists in the database or not.
 	 * 
-	 * @return  bool
+	 * @return bool
 	 */
 	public function loaded()
 	{
@@ -118,134 +119,93 @@ class Database_Table {
 	}
 	
 	/**
-	 * Truncates the table, this will wipe all data and reset any auto-increment counters.
+	 * Lists requested or all constraints associated with the table.
 	 *
-	 * @return  void.
+	 * @return  array|Database_Constraint	The list of all the columns
 	 */
-	public function truncate()
+	public function constraints($name = NULL)
 	{
-		// Truncate the table.
-		DB::truncate($this->name)
-			->execute($this->database);
-	}
-	
-	/**
-	 * Returns the columns within the table.
-	 *
-	 * @param	string	The column you want to return, if there is only one.
-	 * @return  Database_Table_Column	The column(s) you requested.
-	 */
-	public function columns($like = NULL)
-	{
-		// If like is not set, return all the columns
-		if($like === NULL)
+		if ($name === NULL)
 		{
-			return $this->_columns;
+			return $this->_constraints;
 		}
 		else
 		{
-			// Return the exact column
-			return $this->_columns[$like];
+			return $this->_constraints[$name];
+		}
+	}
+	
+	/**
+	 * Retrieves an all or an existing table option.
+	 *
+	 * @param	string	The keyword which the option was defined with, if you're looking for something specific.
+	 * @return  array
+	 */
+	public function options($key = NULL)
+	{
+		if ($key === NULL)
+		{
+			return $this->_options;
+		}
+		else
+		{
+			return $this->_options[$key];
+		}
+	}
+	
+	/**
+	 * Returns the column requested or all columns within the table.
+	 *
+	 * @param	string	The column you want to return, if there is only one.
+	 * @return  array|Database_Table_Column
+	 */
+	public function columns($like = NULL)
+	{
+		if ($this->_loaded)
+		{
+			if ($name !== NULL)
+			{
+				return Database_Column::instance($this->name, $name);
+			}
+			
+			$columns = $this->_db->list_columns($this->name);
+			
+			foreach ($columns as $name => $schema)
+			{
+				$this->_columns[$column] = 
+					Database_Column::instance($this->name, $name);
+			}
+		}
+		else
+		{
+			return $this->_columns;
 		}
 	}
 	
 	/**
 	 * Adds a column to the table. If the table is loaded then the action will be commited to the database.
 	 *
-	 * @param	Database_Column|array	A list of columns or a single column object.
-	 * @return  void.
+	 * @param	Database_Column	The database column.
+	 * @return  Database_Table
 	 */
-	public function add_column($column)
+	public function add_column(Database_Column $column)
 	{
-		// Normalise the two possible input data types to be an array
-		$column = is_array($column) ? $column : array($column);
+		$this->_columns[$column->name] = $column;
 		
-		foreach($column as $col)
-		{
-			// Set the column table by reference.
-			$col->table = $this;
-			
-			// If this table is loaded, add the column to the database.
-			if($this->_loaded)
-			{
-				DB::alter($this->name)
-					->add($col->compile())
-					->execute($this->database);
-			}
-			
-			// And just add it to the list of columns.
-			$this->_columns[$col->name] = $col;
-		}
+		return $this;
 	}
 	
 	/**
-	 * Drops the table, removing it from the database. WARNING: All data will be lost.
+	 * Adds a constraint to the table.
 	 *
-	 * @return  void.
+	 * @param	Database_Constraint	The constraint object.
+	 * @return  Database_Table
 	 */
-	public function drop()
+	public function add_constraint(Database_Constraint $constraint)
 	{
-		// Drop the table
-		DB::drop('table', $this->name)
-			->execute($this->database);
-			
-		// The table unloads when it is dropped.
-		$this->_loaded = FALSE;
-	}
-	
-	/**
-	 * Creates the table. If the table is already loaded an error will be thrown.
-	 *
-	 * @return  void.
-	 */
-	public function create()
-	{
-		// Create this table
-		DB::create($this->compile())
-			->execute($this->database);
-			
-		// Once the table is created, we can count it as loaded.
-		$this->_loaded = TRUE;
-	}
-	
-	/**
-	 * Renames the table to something else.
-	 *
-	 * @return  void.
-	 */
-	public function rename($new_name)
-	{
-		// Make sure we dont rename something by mistake
-		if( ! $this->_loaded)
-		{
-			throw new Kohana_Exception('You can only rename tables that have been loaded from the database');
-		}
+		$this->_constraints[$constraint->name] = $constraint;
 		
-		// Rename this table to a new name
-		DB::alter($this)
-			->rename($new_name)
-			->execute($this->_database);
-			
-		$this->name = $new_name;
-	}
-	
-	/**
-	 * Retrieves an existing table option.
-	 *
-	 * @param	string	The keyword which the option was defined with, if you're looking for something specific.
-	 * @return  array	The list of options.
-	 * @return	array	The single array you were looking for.
-	 */
-	public function options($keyword = NULL)
-	{
-		if($keyword === NULL)
-		{
-			return $this->_options;
-		}
-		else
-		{
-			return $this->_options[$keyword];
-		}
+		return $this;
 	}
 	
 	/**
@@ -261,131 +221,48 @@ class Database_Table {
 	 *
 	 * @param	string	The keyword of the option.
 	 * @param	string	The value associated with the keyword. This is completely optional depending on your needs.
-	 * @return  void.
+	 * @return  Database_Table
 	 */
-	public function add_option($keyword, $value = NULL)
+	public function add_option($key, $value = NULL)
 	{
-		// If a value was not set, just add the value to the array
-		if($value === NULL)
+		if ($value === NULL)
 		{
-			$this->options[] = $value;
+			$this->_options[] = $key;
 		}
 		else
 		{
-			$this->_options[$keyword] = $value;
-		}
-	}
-	
-	/**
-	 * Lists all constraints associated with the table.
-	 *
-	 * @return  array	The list of all the columns
-	 */
-	public function constraints()
-	{
-		// Return them all
-		return $this->_constraints;
-	}
-	
-	/**
-	 * Adds a constraint to the table.
-	 *
-	 * @param	string	The key identifier of the constraint, use this to locate the constraint in future using
-	 * the constraints($like) method.
-	 * @param	Database_Constraint	The constraint object.
-	 * @return  void.
-	 */
-	public function add_constraint( Database_Constraint $constraint)
-	{
-		// Add it to the array
-		$this->_constraints[] = $constraint;
-		
-		// Set the table as the current object
-		$constraint->table = $this;
-	}
-	
-	public function reset()
-	{
-		// Get a list of columns from the database for this table
-		$columns = $this->database->list_columns($this->name);
-		
-		// Reset the column array
-		$this->_columns = array();
-		
-		// Loop through each column, and add it to the column array
-		foreach($columns as $name => $column)
-		{
-			$this->_columns[$name] = Database_Column::instance($this, $name);
-		}
-	}
-	
-	public function compile()
-	{
-		// Pull everything together and return it as an array.
-		return array(
-			'name' => $this->name,
-			'columns' => $this->_compile_columns(),
-			'constraints' => $this->_compile_constraints(),
-			'options' => $this->options()
-		);
-	}
-	
-	/**
-	 * Compiles all thr constraints within the table.
-	 *
-	 * @return  array
-	 */
-	protected function _compile_constraints()
-	{
-		// Get a list of constraints
-		$constraints = $this->constraints();
-		
-		// Foreach constraint, compile it
-		foreach($constraints as $name => & $constraint)
-		{
-			$constraint = $constraint->compile($this->database);
+			$this->_options[$key] = $value;
 		}
 		
-		// Return the compiled array
-		return $constraints;
+		return $this;
 	}
 	
 	/**
-	 * Compiles all the columns in the table.
-	 *
-	 * @return  array
+	 * Creates the table.
+	 * 
+	 * @return 	Database_Table
 	 */
-	protected function _compile_columns()
+	public function create()
 	{
-		// Get a list of columns
-		$columns = $this->columns();
+		$table->_loaded = TRUE;
 		
-		// Loop through every column and change the object to an array
-		foreach($columns as $name => & $column)
-		{
-			// Compile the column and set it
-			$column = $column->compile();
-		}
-		
-		// Return the column array
-		return $columns;
+		DB::create($this->name)
+			->columns($this->_columns)
+			->constraints($this->_constraints)
+			->options($this->_options)
+			->execute($this->_db);
+			
+		return $this;
 	}
 	
 	/**
-	 * Cloned objects will be unloaded.
+	 * Cloned tables are not loaded.
+	 * 
+	 * @return	void
 	 */
 	public function __clone()
 	{
-		// Cloned tables dont exist in the database.
-		$this->_loaded = false;
+		$this->_loaded = FALSE;
 	}
 	
-	/**
-	 * When casted as a string, return the table's name.
-	 */
-	public function __toString()
-	{
-		// Return the name of the table
-		return $this->name;
-	}
-}
+} // End Database_Table

@@ -1,30 +1,55 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php defined('SYSPATH') OR die('No direct access allowed.');
 /**
- * Database table float column.
+ * Database float column class.
  *
  * @package		DBForge
  * @author		Oliver Morgan
- * @uses		Kohana 3.0 Database
+ * @uses		Database
  * @copyright	(c) 2009 Oliver Morgan
  * @license		MIT
  */
 class Database_Column_Float extends Database_Column_Int {
-
-	// Whether the number is exact
-	public $is_exact;
-
-	protected function _load_schema($information_schema)
+	
+	/**
+	 * The number of decimal places permitted by the float.
+	 * 
+	 * @var int
+	 */
+	public $precision;
+	
+	/**
+	 * Whether the value is fixed in size or not.
+	 * 
+	 * @var bool
+	 */
+	public $exact;
+	
+	public function parameters($set = NULL)
 	{
-		// Set whether the floating number is exact or not, default FALSE
-		$this->is_exact = arr::get($information_schema, 'exact', FALSE);
+		if ($set === NULL)
+		{
+			// Scale comes before precision.
+			return parent::parameters() + array($this->precision);
+		}
+		else
+		{
+			// Set the integer's scale.
+			parent::parameters($set[0]);
+			
+			// Set the decimal's precision.
+			$this->precision = $set[1];
+		}
 	}
 	
-	protected function _compile_parameters()
+	protected function _load_schema(array $schema)
 	{
-		// FLOAT(SCALE, PRECISION)
-		return array(
-			$this->scale,
-			$this->precision
-		);
+		$this->exact = arr::get($schema, 'exact', FALSE);
+		$this->precision = arr::get($schema, 'numeric_precision');
 	}
-}
+	
+	protected function _constraints()
+	{
+		return array();
+	}
+	
+} // End Database_Column_Float

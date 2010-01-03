@@ -1,19 +1,20 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php defined('SYSPATH') OR die('No direct access allowed.');
 /**
- * Database object creation helper methods.
+ * Database helper class.
  *
- * @package    Database
- * @author     Kohana Team
- * @copyright  (c) 2009 Kohana Team
- * @license    http://kohanaphp.com/license.html
+ * @package		DBForge
+ * @author		Oliver Morgan
+ * @uses		Database
+ * @copyright	(c) 2009 Oliver Morgan
+ * @license		MIT
  */
 class DB extends Kohana_DB {
 	
 	/**
 	 * Create a new alter table query.
 	 *
-	 * @param   string   The name of the table to alter.
-	 * @return  Database_Query_Builder_Alter
+	 * @param	string	The name of the table to alter.
+	 * @return	Database_Query_Builder_Alter
 	 */
 	public static function alter($table)
 	{
@@ -23,10 +24,10 @@ class DB extends Kohana_DB {
 	/**
 	 * Create a new create table query.
 	 *
-	 * @param   array   The table array to create.
-	 * @return  Database_Query_Builder_Create
+	 * @param	string	The table's name.
+	 * @return	Database_Query_Builder_Create
 	 */
-	public static function create( array $table)
+	public static function create($table)
 	{
 		return new Database_Query_Builder_Create($table);
 	}
@@ -34,20 +35,20 @@ class DB extends Kohana_DB {
 	/**
 	 * Create a new drop query.
 	 *
-	 * @param   string	 The type of object to drop; 'database', 'table', 'column' or 'constraint.
-	 * @param   string   The name of the object to drop.
-	 * @return  Database_Query_Builder_Drop
+	 * @param	string	The type of object to drop; 'database', 'table', 'column' or 'constraint.
+	 * @param	string	The name of the object to drop.
+	 * @return	Database_Query_Builder_Drop
 	 */
-	public static function drop($type, $object)
+	public static function drop($type, $name)
 	{
-		return new Database_Query_Builder_Drop($type, $object);
+		return new Database_Query_Builder_Drop($type, $name);
 	}
 	
 	/**
 	 * Creates a new table truncate query.
 	 *
-	 * @param   string   The table name to truncate.
-	 * @return  Database_Query_Builder_Truncate
+	 * @param	string	The table name to truncate.
+	 * @return	Database_Query_Builder_Truncate
 	 */
 	public static function truncate($table)
 	{

@@ -1,41 +1,36 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php defined('SYSPATH') OR die('No direct access allowed.');
 /**
- * Database table CHECK constraint.
+ * Database check constraint class.
  *
  * @package		DBForge
  * @author		Oliver Morgan
- * @uses		Kohana 3.0 Database
+ * @uses		Database
  * @copyright	(c) 2009 Oliver Morgan
  * @license		MIT
  */
 class Database_Constraint_Check extends Database_Constraint {
 	
-	// The checks array
-	protected $_checks = array();
-	
-	// The type of the constraint.
-	protected $_type = 'check';
+	/**
+	 * An associated array of checks done by this constraint
+	 * 
+	 * @var array
+	 */
+	protected $_checks;
 	
 	/**
-	 * Initiate a CHECK constraint.
-	 *
-	 * @param	string	The name of the column that's being checked.
-	 * @param	string	The operator used in the conditional statement.
-	 * @param	string	The value to compare it with.
-	 * @param	string	The name of the key, if this is not set, one will generated for you.
-	 * @return	Database_Constraint_Check	The constraint object.
+	 * Initializes a new check constraint object.
+	 * 
+	 * @param	string	The name of the column to perform the statement on.
+	 * @param	string	The opertor to compare the value with.
+	 * @param	mixed	The value to compare the column with via the operator.
+	 * @return	void
 	 */
-	public function __construct($identifier, $operator, $value, $name = NULL)
+	public function __construct($column, $operator, $value)
 	{
-		// Set the name/key of the check
-		if($name !== NULL)
-		{
-			$this->name = $name;
-		}
+		$this->name = uniqid('ck_');
 		
-		// Add the initial check to the array
 		$this->_checks[] = array(
-			$identifier,
+			$column,
 			$operator,
 			$value
 		);
@@ -44,105 +39,70 @@ class Database_Constraint_Check extends Database_Constraint {
 	/**
 	 * Adds a check statement using the AND keyword.
 	 *
-	 * @param	string	The column name.
-	 * @param	string	The operator used in the conditional statement.
-	 * @param	object	The value to compare the column with.
-	 * @return	Database_Constraint_Check	The current object.
+	 * @param	string	The name of the column to perform the statement on.
+	 * @param	string	The opertor to compare the value with.
+	 * @param	mixed	The value to compare the column with via the operator.
+	 * @return	Database_Constraint_Check
 	 */
-	public function check_and($identifier, $operator, $value)
+	public function check_and($column, $operator, $value)
 	{
-		// Compile the check into an array and save it
-		$this->_checks[] = array(
-			'AND' => array(
-				$identifier,
-				$operator,
-				$value
-			)
-		);
+		$this->_add_rule($column, $operator, $value, 'AND');
 		
-		// Return the current object for chaining
 		return $this;
 	}
 	
 	/**
 	 * Adds a check statement using the OR keyword.
 	 *
-	 * @param	string	The column name.
-	 * @param	string	The operator used in the conditional statement.
-	 * @param	object	The value to compare the column with.
-	 * @return	Database_Constraint_Check	The current object.
+	 * @param	string	The name of the column to perform the statement on.
+	 * @param	string	The opertor to compare the value with.
+	 * @param	mixed	The value to compare the column with via the operator.
+	 * @return	Database_Constraint_Check
 	 */
-	public function check_or($identifier, $operator, $value)
+	public function check_or($column, $operator, $value)
 	{
-		// Compile the check into an array and save it
-		$this->_checks[] = array(
-			'OR' => array(
-				$identifier,
-				$operator,
-				$value
-			)
-		);
+		$this->_add_rule($column, $operator, $value, 'OR');
 		
-		// Return the current object for chaining
 		return $this;
-	}
-	
-	/**
-	 * Compiles the current object into a string.
-	 *
-	 * @param	string	The column name.
-	 * @param	string	The operator used in the conditional statement.
-	 * @param	object	The value to compare the column with.
-	 * @return	Database_Constraint_Check	The current object.
-	 */
-	protected function _compile_check( array $data, Database $db)
-	{
-		// We have a keyword
-		if(is_array(reset($data)))
-		{
-			// AND or OR
-			$keyword = key(reset($data));
-			
-			// Compile the check params into a single string
-			return $keyword.' '.$db->quote_identifier($data[0]).' '.$data[1].' '.$db->quote($data[2]);
-		}
-		else
-		{
-			// Compile the check params into a single string
-			return $db->quote_identifier($data[0]).' '.$data[1].' '.$db->quote($data[2]);
-		}
 	}
 	
 	public function compile( Database $db)
 	{
-		// Initiate the array to return
-		$result = array(
-			'name'	=> '',
-			'params' => array('check' => 
-				array('')
-			)
-		);
+		$sql = 'CONSTRAINT CHECK (';
 		
-		// Prepare a name string
-		$name = 'ck';
-		
-		// Compile each check and add it to the array
-		foreach($this->_checks as $check)
+		foreach ($this->_checks as $check)
 		{
-			// Ads all the identifiers to the check name
-			$name .= '_'.$check[0];
+			$key = key($check);
 			
-			// Compiles the check and adds it to the array
-			$result['params']['check'][0] .= $this->_compile_check($check, $db);
+			if ( ! is_int($key))
+			{
+				$sql .= ' '.$key.' ';
+			}
+			
+			$sql .= implode('', current($check));
 		}
 		
-		// Set the name to either the user set name, or the one we generated.
-		$this->name = $result['name'] = isset($this->name) ? $this->name : $name;
-		
-		// We assume that the constraint is created when it is compiled.
-		$this->_loaded = TRUE;
-		
-		// Returns the result.
-		return $result;
+		return $sql.')';
 	}
-}
+	
+	/**
+	 * Adds a check statement using a defined key
+	 *
+	 * @param	string	The name of the column to perform the statement on.
+	 * @param	string	The opertor to compare the value with.
+	 * @param	mixed	The value to compare the column with via the operator.
+	 * @param	string	The key that seperates this operator from the rest.
+	 * @return	Database_Constraint_Check
+	 */
+	protected function _add_rule($column, $operator, $value, $key)
+	{
+		$this->_checks[] = array(
+			'OR' => array(
+				$column,
+				$operator,
+				$value
+			)
+		);
+	}
+	
+} // End Database_Constraint_Check

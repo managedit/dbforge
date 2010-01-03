@@ -1,66 +1,65 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php defined('SYSPATH') OR die('No direct access allowed.');
 /**
- * Database table int column.
+ * Database integer column object.
  *
  * @package		DBForge
  * @author		Oliver Morgan
- * @uses		Kohana 3.0 Database
+ * @uses		Database
  * @copyright	(c) 2009 Oliver Morgan
  * @license		MIT
  */
 class Database_Column_Int extends Database_Column {
 	
-	// The maximum value of the number
-	public $maximum_value;
+	/**
+	 * The maximum value this column can be.
+	 * 
+	 * @var int
+	 */
+	public $max_value;
 	
-	// The minimum value of the number
-	public $minimum_value;
+	/**
+	 * The minimum value this column can be.
+	 * 
+	 * @var int
+	 */
+	public $min_value;
 	
-	// The number's precision
-	public $precision;
-	
-	// The number's scale
+	/**
+	 * The number of digits the value can be at maximum value.
+	 * 
+	 * @var int
+	 */
 	public $scale;
-
-	// Is the field an auto_increment
-	public $is_auto_increment;
 	
-	protected function _load_schema($information_schema)
-	{
-		// Integers can be auto_increment
-		$this->is_auto_increment = strpos(arr::get($information_schema, 'extra'), 'auto_increment') !== false;
-		
-		// Set the numeric precision 
-		$this->precision = arr::get($information_schema, 'numeric_precision');
-		
-		// Set the numeric scale
-		$this->scale = arr::get($information_schema, 'numeric_scale');
-		
-		// Set the maximum and minimum values
-		$this->maximum_value = arr::get($information_schema, 'max');
-		$this->minimum_value = arr::get($information_schema, 'min');
-	}
+	/**
+	 * The maximum value this column can be.
+	 * 
+	 * @var bool
+	 */
+	public $auto_increment;
 	
-	protected function _compile_constraints()
+	public function parameters($set = NULL)
 	{
-		// Let the parent do their bit first
-		$constraints = parent::_compile_constraints();
-		
-		// If the field is set to auto_increment, then set it.
-		if($this->is_auto_increment)
+		if ($set === NULL)
 		{
-			$constraints[] = 'auto_increment';
+			return array($this->scale);
 		}
-		
-		// Finally return the constraints
-		return $constraints;
+		else
+		{
+			$this->scale = $set;
+		}
 	}
 	
-	protected function _compile_parameters()
+	protected function _load_schema(array $schema)
 	{
-		// INT(SCALE)
-		return array(
-			$this->scale,
-		);
+		$this->scale = arr::get($schema, 'numeric_scale');
+		$this->max_value = arr::get($schema, 'max');
+		$this->min_value = arr::get($schema, 'min');
 	}
-}
+	
+	protected function _constraints()
+	{
+		return array();
+	}
+	
+} // End Database_Column_Int

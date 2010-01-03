@@ -9,54 +9,42 @@
  */
 class Database_Query_Builder_Drop extends Database_Query_Builder {
 	
-	// The object thats going to be dropped.
 	protected $_name;
 	
-	// The type of the object we're going to drop.
 	protected $_drop_type;
 	
 	public function __construct($type, $name)
 	{
-		// Set the type of the object we're about to drop.
-		$this->_drop_type = $type;
-		
-		// Set the object we're going to drop.
+		$this->_drop_type = strtolower($type);
 		$this->_name = $name;
 		
-		// Because mummy says so.
 		parent::__construct(Database::DROP, '');
 	}
 	
 	public function compile(Database $db)
 	{
-		// Lets identify the type
-		switch(strtolower($this->_drop_type))
+		switch($this->_drop_type)
 		{
-			// We're dropping an entire database!
 			case 'database':
 				return 'DROP DATABASE '.$db->quote($this->_name);
 			
-			// Just a table to be dropped.
 			case 'table':
 				return 'DROP TABLE '.$db->quote_table($this->_name);
 				
-			// A column to be dropped.
 			case 'column':	
 			case 'constraint':
 			case 'index':
 				return 'DROP '.strtoupper($this->_drop_type).' '.$db->quote_identifier($this->_name);
 				
-			// Something we did not recognise.
 			default:
-				return 'DROP '.strtoupper($this->_drop_type).' '.$this->_name;
+				return 'DROP '.strtoupper($this->_drop_type).' '.$db->quote($this->_name);
 		}
 	}
 	
 	public function reset()
 	{
-		// Reset objects.
 		$this->_drop_type =
 		$this->_name = NULL;
 	}
 	
-} //END Database_Query_Builder_Drop
+} // End Database_Query_Builder_Drop

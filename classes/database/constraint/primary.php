@@ -10,41 +10,30 @@
  */
 class Database_Constraint_Primary extends Database_Constraint {
 	
-	// The type of the constraint.
-	protected $_type = 'primary key';
-	
-	// The keys that make up the primary key
+	/**
+	 * List of keys that make up the primary key.
+	 * 
+	 * @var	array
+	 */
 	protected $_keys;
 	
-	public function __construct( array $keys, $name = NULL)
+	/**
+	 * Initiates a new primary constraint object.
+	 * 
+	 * @param	array	The list of columns that make up the primary key.
+	 * @return	void
+	 */
+	public function __construct(array $keys)
 	{
-		// If the name isnt given, dont set it, we'll have to make it up later
-		if($name !== NULL)
-		{
-			$this->name = $name;
-		}
+		$this->name = uniqid('pk_');
 		
-		// Set the keys
 		$this->_keys = $keys;
 	}
 	
-	public function compile( Database $db)
+	public function compile(Database $db)
 	{
-		// If we dont have a name, generate one.
-		if( ! isset($this->name))
-		{
-			$this->name = 'pk_'.implode('_', $this->_keys);	
-		}
-		
-		// We assume that the constraint is created when it is compiled.
-		$this->_loaded = TRUE;
-		
-		// Finally return the beautiful array.
-		return array(
-			'name'		=> $this->name,
-			'params'	=> array(
-				'primary key' => array_map(array($db, 'quote_identifier'), $this->_keys)
-			)
-		);
+		return 'CONSTRAINT '.$db->quote_identifier($this->name).
+			' PRIMARY KEY ('.implode(',', array_map(array($db, 'quote_identifier'), $this->_keys)).')';
 	}
-}
+	
+} // End Database_Constraint_Primary

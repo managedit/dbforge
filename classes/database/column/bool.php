@@ -1,15 +1,28 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php defined('SYSPATH') OR die('No direct access allowed.');
 /**
- * Database table boolean column.
+ * Boolean database column class.
  *
  * @package		DBForge
  * @author		Oliver Morgan
- * @uses		Kohana 3.0 Database
+ * @uses		Database
  * @copyright	(c) 2009 Oliver Morgan
  * @license		MIT
  */
 class Database_Column_Bool extends Database_Column {
-
-	protected function _load_schema($schema) { }
 	
-}
+	public function parameters($set = NULL)
+	{
+		return NULL;
+	}
+	
+	protected function _load_schema(array $schema)
+	{
+		return;
+	}
+	
+	protected function _constraints()
+	{
+		return array();
+	}
+	
+} // End Database_Column_Bool

@@ -1,10 +1,10 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php defined('SYSPATH') OR die('No direct access allowed.');
 /**
- * Database table constraint.
+ * Database constraint class.
  *
  * @package		DBForge
  * @author		Oliver Morgan
- * @uses		Kohana 3.0 Database
+ * @uses		Database
  * @copyright	(c) 2009 Oliver Morgan
  * @license		MIT
  */
@@ -47,125 +47,37 @@ abstract class Database_Constraint {
 	}
 	
 	/**
-	 * Initiate a CHECK constraint.
-	 *
-	 * @param	string	The name of the column that's being checked.
-	 * @param	string	The operator used in the conditional statement.
-	 * @param	string	The value to compare it with.
-	 * @param	string	The name of the key, if this is not set, one will generated for you.
-	 * @return	Database_Constraint_Check	The constraint object.
+	 * Returns a new check constraint object.
+	 * 
+	 * @param	string	The name of the column to perform the statement on.
+	 * @param	string	The opertor to compare the value with.
+	 * @param	mixed	The value to compare the column with via the operator.
+	 * @return	Database_Constraint_Check
 	 */
-	public static function check($identifier, $operator, $value, $name = NULL)
+	public static function check($column, $operator, $value)
 	{
-		return new Database_Constraint_Check($identifier, $operator, $value, $name);
+		return new Database_Constraint_Check($column, $operator, $value);
 	}
 	
 	/**
-	 * @var Name of the key.
+	 * The constraint name.
+	 * 
+	 * @var string
 	 */
 	public $name;
 	
 	/**
-	 * @var	Database_Table	The table object.
+	 * The parent database object.
+	 * 
+	 * @var Database
 	 */
-	public $table;
-	
-	// Whether the constraint is loaded or not.
-	protected $_loaded;
-	
-	/**
-	 * Compiles the constraint into a DBForge constraint array.
-	 *
-	 * @param	Database	The database to compile the constraint with.
-	 * @return	array	The constraint array.
-	 */
-	abstract public function compile( Database $db);
+	protected $_db;
 	
 	/**
-	 * Drops the constraint from the table.
-	 *
-	 * @return	void
+	 * Compiles the constraint into an SQL statement.
+	 * 
+	 * @return string
 	 */
-	public function drop()
-	{
-		// If the constraint is loaded, attempt to remove it
-		if($this->loaded())
-		{
-			// This is a nasty hard coded hack, because MySQL doesnt follow SQL-92
-			switch(str_replace('Database_', '', get_class($this->table->database)))
-			{
-				case 'MySQL':
-				{
-					switch(str_replace('Database_Constraint_', '', get_class($this)))
-					{
-						case 'Check':
-							break; // Do nothing, MySQL doesnt support dropping check constraints
-							
-						case 'Foreign':
-						case 'Unique':
-						{
-							// MySQL calls foreign and unique constraints "indexes"
-							DB::alter($this->table->name)
-								->drop($this->name, 'index')
-								->execute($this->table->database);
-							break;
-						}
-							
-						case 'Primary':
-						{
-							// There can only be one primary key, so no identifier is needed
-							DB::alter($this->table->name)
-								->drop(NULL, 'PRIMARY KEY')
-								->execute($this->table->database);
-							break;	
-						}	
-					}
-					break;
-				}
-				default:
-				{
-					// All normal databases call constraints "constraints".
-					DB::alter($this->table->name)
-						->drop($this->name, 'constraint')
-						->execute($this->table->database);
-					break;
-				}
-			}
-		}
-	}
+	abstract public function compile(Database $db);
 	
-	/**
-	 * Drops the constraint from the table.
-	 *
-	 * @return	void
-	 */
-	public function create()
-	{
-		$this->table->add_constraint($this);
-	}
-	
-	/**
-	 * Updates a constraint object
-	 *
-	 * @return	void
-	 */
-	public function update()
-	{
-		// First drop the constraint
-		$this->drop();
-		
-		// Then re-create it/
-		$this->create();
-	}
-	
-	/**
-	 * Whether the constraint is loaded or not.
-	 *
-	 * @return	bool
-	 */
-	public function loaded()
-	{
-		// If either we have loaded set to true
-		return $this->_loaded;
-	}
-}
+} // End Database_Constraint

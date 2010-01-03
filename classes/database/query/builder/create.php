@@ -9,59 +9,122 @@
  */
 class Database_Query_Builder_Create extends Database_Query_Builder {
 	
-	// The table object we're working with.
+	/**
+	 * The name of the table we're creating.
+	 * 
+	 * @var	string
+	 */
 	protected $_table;
 	
-	public function __construct( array $table)
+	/**
+	 * The list of column objects.
+	 * 
+	 * @var	array
+	 */
+	protected $_columns = array();
+	
+	/**
+	 * The list of table options.
+	 * 
+	 * @var	array
+	 */
+	protected $_options = array();
+	
+	/**
+	 * The list of table column constraints.
+	 * 
+	 * @var	array
+	 */
+	protected $_constraints = array();
+	
+	/**
+	 * Initiates the sql create builder.
+	 * 
+	 * @param	string	The name of the table we're going to create.
+	 * @return	void
+	 */
+	public function __construct($table)
 	{		
-		// Set the table array
 		$this->_table = $table;
-		
-		// Because mummy says so
+
 		parent::__construct(Database::CREATE, '');
+	}
+	
+	/**
+	 * Appends a list of column(s) to the column array.
+	 * 
+	 * @param	array	The column array.
+	 * @return	Database_Query_Builder_Create
+	 */
+	public function columns(array $columns)
+	{
+		$this->_columns += $columns;
+		
+		return $this;
+	}
+	
+	/**
+	 * Appends a list of column constraints(s) to the array.
+	 * 
+	 * @param	array	The constraint array.
+	 * @return	Database_Query_Builder_Create
+	 */
+	public function constraints(array $constraints)
+	{
+		$this->_constraints += $constraints;
+	}
+	
+	/**
+	 * Appends a list of options(s) to the options array.
+	 * 
+	 * Options are statements placed at the end of the table after the column parameters.
+	 * 
+	 * @param	array	The options array.
+	 * @return	Database_Query_Builder_Create
+	 */
+	public function options(array $options)
+	{
+		$this->_options += $options;
+		
+		return $this;
 	}
 	
 	public function compile(Database $db)
 	{
-		// Start with the basic syntax.
-		$sql = 'CREATE TABLE '.$db->quote_table($this->_table['name']);
+		$sql = 'CREATE TABLE '.$db->quote_table($this->_table).' ';
 		
-		// You are allowed to create a table without any columns. Dont ask me why.
-		if(count($this->_table['columns']) > 0)
+		if ( ! empty($this->_columns))
 		{
-			// Get ready for the column data.
-			$sql .= ' (';
+			$sql .= '(';
 			
-			// Compile the columns in the normal way.
-			foreach($this->_table['columns'] as $name => $data)
+			foreach($this->_columns as $column)
 			{
-				$sql .= Database_Query_Builder::compile_column($data, $db).',';
+				$sql .= $column->compile().',';
 			}
 			
-			// Compile constraints in a normal way
-			foreach($this->_table['constraints'] as $name => $data)
+			foreach($this->_constraints as $constraint)
 			{
-				$sql .= Database_Query_Builder::compile_constraint($data, $db).',';
+				$sql .= $constraint->compile($db).',';
 			}
 			
-			// Seperate the columns with commars, and add the table constraints at the end.
 			$sql = rtrim($sql, ',').') ';
 		}
 		
-		// Process table options
-		foreach($this->_table['options'] as $key => $option)
+		foreach($this->_options as $key => $option)
 		{
 			$sql .= Database_Query_Builder::compile_statement(array($key => $option)).' ';
 		}
 		
-		// Remove the trailing space.
-		return rtrim($sql, ' ').';';
+		return $sql;
 	}
 	
 	public function reset()
 	{
-		// Reset the table object.
 		$this->_table = NULL;
+		
+		$this->_columns =
+		$this->_options =
+		$this->_constraints = array();
 	}
 	
-} //END Database_Query_Builder_Create
+} // End Database_Query_Builder_Create

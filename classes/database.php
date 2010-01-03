@@ -15,4 +15,4 @@ abstract class Database extends Kohana_Database {
 	const DROP =  7;
 	const TRUNCATE =  8;
 	
-}
+} // End Database
