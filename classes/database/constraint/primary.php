@@ -23,9 +23,9 @@ class Database_Constraint_Primary extends Database_Constraint {
 	 * @param	array	The list of columns that make up the primary key.
 	 * @return	void
 	 */
-	public function __construct(array $keys)
+	public function __construct(array $keys, $table)
 	{
-		$this->name = uniqid('pk_');
+		$this->name = 'pk_'.$table.'_'.implode('_', $key);
 		
 		$this->_keys = $keys;
 	}
@@ -34,6 +34,29 @@ class Database_Constraint_Primary extends Database_Constraint {
 	{
 		return 'CONSTRAINT '.$db->quote_identifier($this->name).
 			' PRIMARY KEY ('.implode(',', array_map(array($db, 'quote_identifier'), $this->_keys)).')';
+	}
+	
+	public function drop($table, Database $db = NULL)
+	{
+		if ($db === NULL)
+		{
+			$db = Database::instance();
+		}
+		
+		$this->compile($db);
+		
+		if ($db instanceof Database_MySQL)
+		{
+			return DB::alter($table)
+				->drop(DB::expr(''), 'primary key')
+				->execute($db);
+		}
+		else
+		{
+			return DB::alter($table)
+				->drop($this->name, 'constraint')
+				->execute($db);
+		}
 	}
 	
 } // End Database_Constraint_Primary

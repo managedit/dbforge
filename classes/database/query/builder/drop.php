@@ -31,13 +31,8 @@ class Database_Query_Builder_Drop extends Database_Query_Builder {
 			case 'table':
 				return 'DROP TABLE '.$db->quote_table($this->_name);
 				
-			case 'column':	
-			case 'constraint':
-			case 'index':
-				return 'DROP '.strtoupper($this->_drop_type).' '.$db->quote_identifier($this->_name);
-				
 			default:
-				return 'DROP '.strtoupper($this->_drop_type).' '.$db->quote($this->_name);
+				return 'DROP '.strtoupper($this->_drop_type).' '.$db->quote_identifier($this->_name);
 		}
 	}
 	

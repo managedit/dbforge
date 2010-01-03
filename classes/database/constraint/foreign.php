@@ -53,11 +53,12 @@ class Database_Constraint_Foreign extends Database_Constraint {
 	 * Initiate a FOREIGN KEY constraint.
 	 *
 	 * @param	string	The name of the column that represents the foreign key.
+	 * @param	string	The name of the table.
 	 * @return	void
 	 */
-	public function __construct($column)
+	public function __construct($column, $table)
 	{
-		$this->name = uniqid('fk_');
+		$this->name = 'fk_'.$table.'_'.$column.'_';
 		
 		$this->_column = $column;
 	}
@@ -133,6 +134,8 @@ class Database_Constraint_Foreign extends Database_Constraint {
 	{	
 		list($table, $column) = $this->_references;
 		
+		$this->name .= $table.'_'.$column;
+		
 		$sql = 'CONSTRAINT '.$db->quote_identifier($this->name).
 			' FOREIGN KEY ('.$db->quote_identifier($this->_column).')'.
 			' REFERENCES '.$db->query_table($table).'('.$db->quote_identifier($column).')';
@@ -148,6 +151,29 @@ class Database_Constraint_Foreign extends Database_Constraint {
 		}
 		
 		return $sql;
+	}
+	
+	public function drop($table, Database $db = NULL)
+	{
+		if ($db === NULL)
+		{
+			$db = Database::instance();
+		}
+		
+		$this->compile($db);
+		
+		if ($db instanceof Database_MySQL)
+		{
+			return DB::alter($table)
+				->drop($this->name, 'foreign key')
+				->execute($db);
+		}
+		else
+		{
+			return DB::alter($table)
+				->drop($this->name, 'constraint')
+				->execute($db);
+		}
 	}
 	
 } // End Database_Constraint_Foreign

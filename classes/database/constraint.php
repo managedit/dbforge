@@ -14,36 +14,36 @@ abstract class Database_Constraint {
 	 * Initiate a PRIMARY KEY constraint.
 	 *
 	 * @param	array	The list of columns to make up the primary key.
-	 * @param	string	The name of the key, if this is not set, one will generated for you.
+	 * @param	string	The name of the table this constraint will be in.
 	 * @return	Database_Constraint_Primary	The constraint object.
 	 */
-	public static function primary_key(array $keys, $name = NULL)
+	public static function primary_key(array $keys, $table)
 	{
-		return new Database_Constraint_Primary($keys, $name);
+		return new Database_Constraint_Primary($keys, $table);
 	}
 	
 	/**
 	 * Initiate a FOREIGN KEY constraint.
 	 *
 	 * @param	string	The name of the column that represents the foreign key.
-	 * @param	string	The name of the key, if this is not set, one will generated for you.
+	 * @param	string	The name of the table this foreign key will be in.
 	 * @return	Database_Constraint_Foreign	The constraint object.
 	 */
-	public static function forgeign_key($identifier, $name = NULL)
+	public static function forgeign_key($identifier, $table)
 	{
-		return new Database_Constraint_Foreign($identifier, $name);
+		return new Database_Constraint_Foreign($identifier, $table);
 	}
 	
 	/**
 	 * Initiate a UNIQUE constraint.
 	 *
 	 * @param	string	The name of the column thats unique.
-	 * @param	string	The name of the key, if this is not set, one will generated for you.
+	 * @param	array	The list of keys that make up the unqiue key.
 	 * @return	Database_Constraint_Unique	The constraint object.
 	 */
-	public static function unique($key, $name = NULL)
+	public static function unique(array $keys)
 	{
-		return new Database_Constraint_Unique($key, $name);
+		return new Database_Constraint_Unique($keys);
 	}
 	
 	/**
@@ -78,6 +78,13 @@ abstract class Database_Constraint {
 	 * 
 	 * @return string
 	 */
-	abstract public function compile(Database $db);
+	abstract public function compile(Database $db = NULL);
+	
+	/**
+	 * Drops the constraint with a database independent statemnt.
+	 * 
+	 * @return	sql
+	 */
+	abstract public function drop($table, Database $db = NULL);
 	
 } // End Database_Constraint

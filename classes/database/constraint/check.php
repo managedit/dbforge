@@ -27,7 +27,7 @@ class Database_Constraint_Check extends Database_Constraint {
 	 */
 	public function __construct($column, $operator, $value)
 	{
-		$this->name = uniqid('ck_');
+		$this->name = 'ck_'.$column;
 		
 		$this->_checks[] = array(
 			$column,
@@ -66,23 +66,48 @@ class Database_Constraint_Check extends Database_Constraint {
 		return $this;
 	}
 	
-	public function compile( Database $db)
+	public function compile(Database $db = NULL)
 	{
-		$sql = 'CONSTRAINT CHECK (';
+		if ($db === NULL)
+		{
+			$db = Database::instance();
+		}
+		
+		$sql = 'CONSTRAINT '.$db->quote_identifier($this->name).' CHECK (';
 		
 		foreach ($this->_checks as $check)
 		{
 			$key = key($check);
+			$check = current($check);
 			
 			if ( ! is_int($key))
 			{
 				$sql .= ' '.$key.' ';
 			}
 			
-			$sql .= implode('', current($check));
+			list($column, $operator, $value) = $check[0];
+			
+			$column = $db->quote_identifier($check[0]);
+			$value = $db->quote($value);
+			
+			$sql .= $column.$operator.$value;
 		}
 		
 		return $sql.')';
+	}
+	
+	public function drop($table, Database $db = NULL)
+	{
+		if ($db === NULL)
+		{
+			$db = Database::instance();
+		}
+		
+		$this->compile($db);
+		
+		return DB::alter($table)
+			->drop($this->name, 'constraint')
+			->execute($db);
 	}
 	
 	/**
@@ -96,6 +121,8 @@ class Database_Constraint_Check extends Database_Constraint {
 	 */
 	protected function _add_rule($column, $operator, $value, $key)
 	{
+		$this->name .= '_'.$column;
+		
 		$this->_checks[] = array(
 			'OR' => array(
 				$column,

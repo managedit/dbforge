@@ -74,7 +74,6 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	/**
 	 * Drop a column or constraint.
 	 *
-	 * @throws	Kohana_Exception	If the type isn't recognised.
 	 * @param	string	The name of the column to drop.
 	 * @param	string	The type of object you want to drop.
 	 * @return	Database_Query_Builder_Alter	The current object for chaining.

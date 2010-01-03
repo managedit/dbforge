@@ -36,4 +36,27 @@ class Database_Constraint_Unique extends Database_Constraint {
 			implode(',', array_map(array($db, 'quote_identifier'))).')';
 	}
 	
+	public function drop($table, Database $db = NULL)
+	{
+		if ($db === NULL)
+		{
+			$db = Database::instance();
+		}
+		
+		$this->compile($db);
+		
+		if ($db instanceof Database_MySQL)
+		{
+			return DB::alter($table)
+				->drop($this->name, 'index')
+				->execute($db);
+		}
+		else
+		{
+			return DB::alter($table)
+				->drop($this->name, 'constraint')
+				->execute($db);
+		}
+	}
+	
 } // End Database_Constraint_Unique
