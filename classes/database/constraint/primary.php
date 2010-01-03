@@ -30,8 +30,13 @@ class Database_Constraint_Primary extends Database_Constraint {
 		$this->_keys = $keys;
 	}
 	
-	public function compile(Database $db)
+	public function compile(Database $db = NULL)
 	{
+		if ($db === NULL)
+		{
+			$db = Database::instance();
+		}
+		
 		return 'CONSTRAINT '.$db->quote_identifier($this->name).
 			' PRIMARY KEY ('.implode(',', array_map(array($db, 'quote_identifier'), $this->_keys)).')';
 	}

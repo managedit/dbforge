@@ -35,8 +35,13 @@ class Database_Constraint_Unique extends Database_Constraint {
 		$this->_keys = $keys;
 	}
 	
-	public function compile(Database $db)
+	public function compile(Database $db = NULL)
 	{
+		if ($db === NULL)
+		{
+			$db = Database::instance();
+		}
+		
 		return 'CONSTRAINT '.$db->quote_identifier($this->name).' UNIQUE ('.
 			implode(',', array_map(array($db, 'quote_identifier'))).')';
 	}

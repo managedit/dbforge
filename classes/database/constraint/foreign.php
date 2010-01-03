@@ -130,8 +130,13 @@ class Database_Constraint_Foreign extends Database_Constraint {
 		return $this;
 	}
 	
-	public function compile(Database $db)
-	{	
+	public function compile(Database $db = NULL)
+	{
+		if ($db === NULL)
+		{
+			$db = Database::instance();
+		}
+		
 		list($table, $column) = $this->_references;
 		
 		$this->name .= $table.'_'.$column;
