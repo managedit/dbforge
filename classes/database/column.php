@@ -15,27 +15,27 @@ abstract class Database_Column {
 	 *
 	 * @param	string	The column's datatype.
 	 * @param	Database	The database object.
-	 * @return	object
+	 * @return	Database_Column
 	 */
-	public static function factory($datatype, $database = NULL)
+	public static function factory($datatype, $db = NULL)
 	{
-		if ($database === NULL)
+		if ($db === NULL OR ! $db instanceof Database)
 		{
-			$database = Database::instance();
+			$db = Database::instance();
 		}
 		
-		$schema = $database->datatype($datatype);
+		$schema = $db->datatype($datatype);
 		
 		$class = 'Database_Column_'.ucfirst($schema['type']);
 		
 		if (class_exists($class))
 		{
-			return new $class($database, $schema);
+			return new $class($db, $schema);
 		}
 		else
 		{
 			throw new Kohana_Exception('The given schema type :type is not supported by the current dbforge build.', array(
-				':type'	=> $datatype
+				':type'	=> $schema['type']
 			));
 		}
 	}
@@ -142,11 +142,11 @@ abstract class Database_Column {
 		
 		if ($schema !== NULL)
 		{
-			$this->name = arr::get($information_schema, 'column_name');
-			$this->default = arr::get($information_schema, 'column_default');
-			$this->is_nullable = arr::get($information_schema, 'is_nullable') == 'YES';
-			$this->ordinal_position = arr::get($information_schema, 'ordinal_position');
-			$this->datatype = arr::get($information_schema, 'data_type');
+			$this->name = arr::get($schema, 'column_name');
+			$this->default = arr::get($schema, 'column_default');
+			$this->is_nullable = arr::get($schema, 'is_nullable') == 'YES';
+			$this->ordinal_position = arr::get($schema, 'ordinal_position');
+			$this->datatype = arr::get($schema, 'data_type');
 			
 			$this->_load_schema($schema);
 			

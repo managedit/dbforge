@@ -23,9 +23,14 @@ class Database_Constraint_Unique extends Database_Constraint {
 	 * @param	array	The list of keys that constitude the unique constraint.
 	 * @return	Database_Constraint_Unique	The constraint object.
 	 */
-	public function __construct(array $keys)
+	public function __construct($keys)
 	{
-		$this->name = uniqid('key_');
+		if ( ! is_array($keys))
+		{
+			$keys = array($keys);
+		}
+		
+		$this->name = 'key_'.implode('_', $keys);
 		
 		$this->_keys = $keys;
 	}
