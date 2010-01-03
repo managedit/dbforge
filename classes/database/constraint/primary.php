@@ -25,7 +25,7 @@ class Database_Constraint_Primary extends Database_Constraint {
 	 */
 	public function __construct(array $keys, $table)
 	{
-		$this->name = 'pk_'.$table.'_'.implode('_', $key);
+		$this->name = 'pk_'.$table.'_'.implode('_', $keys);
 		
 		$this->_keys = $keys;
 	}

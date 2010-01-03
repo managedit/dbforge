@@ -63,21 +63,21 @@ class Database_Table {
 	 * 
 	 * @var	array
 	 */
-	protected $_columns;
+	protected $_columns = array();
 	
 	/**
 	 * The list of options.
 	 * 
 	 * @var	array
 	 */
-	protected $_options;
+	protected $_options = array();
 	
 	/**
 	 * The list of constraints.
 	 * 
 	 * @var	array
 	 */
-	protected $_constraints;
+	protected $_constraints = array();
 	
 	/**
 	 * Whether the table is loaded or not.
@@ -103,7 +103,7 @@ class Database_Table {
 	 */
 	public function __construct($name, $db, array $schema = NULL)
 	{
-		$this->_name = $name;
+		$this->name = $name;
 		$this->_db = $db;
 		$this->_loaded = $schema !== NULL;
 	}
@@ -244,7 +244,7 @@ class Database_Table {
 	 */
 	public function create()
 	{
-		$table->_loaded = TRUE;
+		$this->_loaded = TRUE;
 		
 		DB::create($this->name)
 			->columns($this->_columns)

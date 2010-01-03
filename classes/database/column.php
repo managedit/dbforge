@@ -30,7 +30,10 @@ abstract class Database_Column {
 		
 		if (class_exists($class))
 		{
-			return new $class($db, $schema);
+			$obj = new $class($db, $schema);
+			$obj->datatype = $datatype;
+			
+			return $obj;
 		}
 		else
 		{
@@ -193,9 +196,9 @@ abstract class Database_Column {
 	 * @param	Database	The database object.
 	 * @return	string
 	 */
-	final public function compile()
+	final public function compile($db = NULL)
 	{
-		return Database_Query_Builder::compile_column($this);
+		return Database_Query_Builder::compile_column($this, $db);
 	}
 	
 	/**
@@ -214,10 +217,10 @@ abstract class Database_Column {
 		
 		if ($this->default)
 		{
-			$constraints[] = array('default' => $this->default);
+			$constraints['default'] = $this->default;
 		}
 		
-		return array_merge($constraints, $this->_constraints);
+		return array_merge($constraints, $this->_constraints());
 	}
 	
 	/**

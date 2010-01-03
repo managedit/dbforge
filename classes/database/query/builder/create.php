@@ -72,6 +72,8 @@ class Database_Query_Builder_Create extends Database_Query_Builder {
 	public function constraints(array $constraints)
 	{
 		$this->_constraints += $constraints;
+		
+		return $this;
 	}
 	
 	/**
@@ -99,7 +101,7 @@ class Database_Query_Builder_Create extends Database_Query_Builder {
 			
 			foreach($this->_columns as $column)
 			{
-				$sql .= $column->compile().',';
+				$sql .= $column->compile($db).',';
 			}
 			
 			foreach($this->_constraints as $constraint)

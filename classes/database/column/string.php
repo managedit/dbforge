@@ -35,13 +35,13 @@ class Database_Column_String extends Database_Column {
 	{
 		if ($this->exact)
 		{
-			return NULL;
+			return array();
 		}
 		else
 		{
 			if ($set === NULL)
 			{
-				return array($this->max_length);
+				return isset($this->max_length) ? array($this->max_length) : array();
 			}
 			else
 			{
@@ -63,6 +63,8 @@ class Database_Column_String extends Database_Column {
 		{
 			return array('binary');
 		}
+		
+		return array();
 	}
 	
 } // End Database_Column_String

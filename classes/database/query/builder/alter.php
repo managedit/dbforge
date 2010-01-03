@@ -18,11 +18,11 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	protected $_table;
 	
 	/**
-	 * The list of columns to modify.
+	 * The column to modify.
 	 * 
-	 * @var array
+	 * @var Database_Column
 	 */
-	protected $_modify = array();
+	protected $_modify;
 	
 	/**
 	 * The list of columns to add.
@@ -39,11 +39,11 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	protected $_add_constraints = array();
 	
 	/**
-	 * The list of drops to perform by the 
+	 * The name and type of the object to drop.
 	 * 
-	 * @var unknown_type
+	 * @var	array
 	 */
-	protected $_drops = array();
+	protected $_drop = array();
 	
 	/**
 	 * Create a new alter query builder.
@@ -66,7 +66,7 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	 */
 	public function modify(Database_Column $column)
 	{
-		$this->_modify[] = $column;
+		$this->_modify = $column;
 		
 		return $this;
 	}
@@ -80,7 +80,7 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	 */
 	public function drop($name, $type = 'column')
 	{
-		$this->_drops[] = array($type => $name);
+		$this->_drop = array($name, $type);
 		
 		return $this;
 	}
@@ -114,19 +114,32 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	
 	public function compile(Database $db)
 	{
-		return $this->_compile_add($db).
-			$this->_compile_modify($db).
-			$this->_compile_drop($db);
+		if ($sql = $this->_compile_add($db))
+		{
+			return 'ALTER TABLE '.$db->quote_table($this->_table).' '.$sql;
+		}
+		elseif ($sql = $this->_compile_modify($db))
+		{
+			return 'ALTER TABLE '.$db->quote_table($this->_table).' '.$sql;
+		}
+		elseif ($sql = $this->_compile_drop($db))
+		{
+			return 'ALTER TABLE '.$db->quote_table($this->_table).' '.$sql;
+		}
+		else
+		{
+			return NULL;
+		}
 	}
 	
 	public function reset()
 	{
+		$this->_modify =
+		$this->_drop =
 		$this->_table = NULL;
 		
-		$this->_drops =
 		$this->_add_columns =
-		$this->_add_constraints =
-		$this->_modify = array();
+		$this->_add_constraints = array();
 	}
 	
 	/**
@@ -141,9 +154,7 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 		
 		if ( ! empty($this->_add_columns) OR ! empty($this->_add_constraints))
 		{
-			$sql = 'ALTER TABLE '.$db->quote_table($this->_table).' ';
-			
-			$multi = count($this->_modify_columns) + count($this->_add_constraints) > 1;
+			$multi = count($this->_add_columns) + count($this->_add_constraints) > 1;
 			
 			$sql .= 'ADD '.($multi ? '(' : '');
 			
@@ -171,25 +182,12 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	 */
 	protected function _compile_modify(Database $db)
 	{
-		$sql = '';
-		
-		if ( ! empty($this->_modify_columns))
+		if (isset($this->_modify))
 		{
-			$sql = 'ALTER TABLE '.$db->quote_table($this->_table).' ';
-			
-			$multi = count($this->_modify_columns) > 1;
-			
-			$sql .= 'MODIFY '.($multi ? '(' : '');
-			
-			foreach ($this->_modify_columns as $column)
-			{
-				$sql .= $column->compile().',';
-			}
-			
-			$sql = rtrim($sql, ',').($multi ? ')' : '').';';
+			return 'MODIFY '.$this->_modify->compile($db);
 		}
 		
-		return $sql;
+		return '';
 	}
 	
 	/**
@@ -200,18 +198,12 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	 */
 	protected function _compile_drop(Database $db)
 	{
-		$sql = '';
-		
-		if ( ! empty($this->_drops))
+		if ( ! empty($this->_drop))
 		{
-			foreach ($this->_drops as $type => $name)
-			{
-				$sql .= 'ALTER TABLE '.$db->quote_table($this->_original_name).' '.
-						DB::drop($type, $name)->compile($db).';';
-			}
+			return DB::drop($type, $name)->compile($db);
 		}
 		
-		return $sql;
+		return '';
 	}
 	
 } // End Database_Query_Builder_Alter

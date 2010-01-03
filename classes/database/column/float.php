@@ -29,7 +29,10 @@ class Database_Column_Float extends Database_Column_Int {
 		if ($set === NULL)
 		{
 			// Scale comes before precision.
-			return parent::parameters() + array($this->precision);
+			$params = parent::parameters();
+			
+			// We dont want empty arrays
+			return isset($this->precision) ? $params + array($this->precision) : $params;
 		}
 		else
 		{

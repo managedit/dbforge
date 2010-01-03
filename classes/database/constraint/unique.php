@@ -43,7 +43,7 @@ class Database_Constraint_Unique extends Database_Constraint {
 		}
 		
 		return 'CONSTRAINT '.$db->quote_identifier($this->name).' UNIQUE ('.
-			implode(',', array_map(array($db, 'quote_identifier'))).')';
+			implode(',', array_map(array($db, 'quote_identifier'), $this->_keys)).')';
 	}
 	
 	public function drop($table, Database $db = NULL)

@@ -32,7 +32,7 @@ class Database_Column_Int extends Database_Column {
 	public $scale;
 	
 	/**
-	 * The maximum value this column can be.
+	 * Whether the integer field is auto incremented.
 	 * 
 	 * @var bool
 	 */
@@ -42,7 +42,7 @@ class Database_Column_Int extends Database_Column {
 	{
 		if ($set === NULL)
 		{
-			return array($this->scale);
+			return isset($this->scale) ? array($this->scale) : array();
 		}
 		else
 		{
@@ -59,6 +59,11 @@ class Database_Column_Int extends Database_Column {
 	
 	protected function _constraints()
 	{
+		if ($this->auto_increment)
+		{
+			return array('auto_increment');
+		}
+		
 		return array();
 	}
 	
