@@ -29,7 +29,7 @@ abstract class Database_Constraint {
 	 * @param	string	The name of the table this foreign key will be in.
 	 * @return	Database_Constraint_Foreign	The constraint object.
 	 */
-	public static function forgeign_key($identifier, $table)
+	public static function foreign_key($identifier, $table)
 	{
 		return new Database_Constraint_Foreign($identifier, $table);
 	}
