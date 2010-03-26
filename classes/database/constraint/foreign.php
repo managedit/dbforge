@@ -152,7 +152,7 @@ class Database_Constraint_Foreign extends Database_Constraint {
 		
 		if(isset($this->_on_delete))
 		{
-			$sql .= ' ON DELETE '.strtoupper($this->_on_update);
+			$sql .= ' ON DELETE '.strtoupper($this->_on_delete);
 		}
 		
 		return $sql;
