@@ -9,6 +9,28 @@
  * @license		MIT
  */
 abstract class Database_Query_Builder extends Kohana_Database_Query_Builder {
+
+	public static function compile_statement(array $statement)
+	{
+		$sql = '';
+
+		foreach($statement as $key => $value)
+		{
+			$sql .= strtoupper($key);
+
+			if ($value)
+			{
+				$sql .= '='.strtoupper($value);
+			}
+
+			$sql .= ' ';
+		}
+
+		$sql = substr($sql, 0, strlen($sql) - 1);
+
+		return $sql;
+	}
+
 	
 	public static function compile_column(Database_Column $column, Database $db = NULL)
 	{
