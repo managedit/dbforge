@@ -210,7 +210,7 @@ abstract class Database_Column {
 	{
 		$constraints = array();
 		
-		if ($this->nullable)
+		if ($this->nullable === FALSE)
 		{
 			$constraints[] = 'not null';
 		}
