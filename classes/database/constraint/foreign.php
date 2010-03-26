@@ -143,7 +143,7 @@ class Database_Constraint_Foreign extends Database_Constraint {
 		
 		$sql = 'CONSTRAINT '.$db->quote_identifier($this->name).
 			' FOREIGN KEY ('.$db->quote_identifier($this->_column).')'.
-			' REFERENCES '.$db->query_table($table).'('.$db->quote_identifier($column).')';
+			' REFERENCES '.$db->quote_table($table).'('.$db->quote_identifier($column).')';
 		
 		if (isset($this->_on_update))
 		{
