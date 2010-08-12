@@ -200,6 +200,7 @@ class Database_Query_Builder_Alter extends Database_Query_Builder {
 	{
 		if ( ! empty($this->_drop))
 		{
+			list($name, $type) = $this->_drop;
 			return DB::drop($type, $name)->compile($db);
 		}
 		

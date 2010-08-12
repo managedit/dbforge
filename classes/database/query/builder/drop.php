@@ -38,7 +38,7 @@ class Database_Query_Builder_Drop extends Database_Query_Builder {
 	
 	public function reset()
 	{
-		$this->_drop_type =
+		$this->_drop_type = NULL;
 		$this->_name = NULL;
 	}
 	
